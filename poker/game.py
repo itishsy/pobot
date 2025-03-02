@@ -217,6 +217,74 @@ class Section(BaseModel):
                 and self.card5 == sec.card5 and self.card6 == sec.card6 and self.card7 == sec.card7
                 and self.seat == sec.seat)
 
+    def game_state(self):
+        community_cards = {
+                'preflop': [],  # 翻牌前无公共牌
+                'flop': [],  # 翻牌圈3张
+                'turn': [],  # 转牌圈4张
+                'river': []  # 河牌圈5张
+            }
+        if self.stage == 'flop':
+            community_cards['flop'] = [self.card3, self.card4, self.card5]
+        elif self.stage == 'turn':
+            community_cards['flop'] = [self.card3, self.card4, self.card5]
+            community_cards['turn'] = [self.card3, self.card4, self.card5, self.card6]
+        elif self.stage == 'river':
+            community_cards['flop'] = [self.card3, self.card4, self.card5]
+            community_cards['turn'] = [self.card3, self.card4, self.card5, self.card6]
+            community_cards['river'] = [self.card3, self.card4, self.card5, self.card6, self.card7]
+
+        # 游戏状态示例（Python字典结构）
+        game_state = {
+            # 基础牌局信息
+            'stage': self.stage,  # 当前阶段: preflop/flop/turn/river
+            'pot': self.pool,  # 当前底池总金额（单位：筹码）
+            'my_hand': [self.card1, self.card2],  # 自己的两张底牌（牌面字符串表示）
+            'my_stack': self.balance,  # 自己的剩余筹码量
+            'my_position': self.seat,  # 自己的位置: BTN/SB/BB/UTG/MP
+
+            # 公共牌信息（根据阶段动态变化）
+            'community_cards': community_cards,
+
+            # 入池玩家信息（包含自己）
+            'players': [
+                {
+                    'id': 'P1',  # 玩家唯一标识
+                    'position': 'SB',  # 位置: BTN/SB/BB/UTG/MP等
+                    'stack': 3000,  # 剩余筹码量
+                    'is_active': True,  # 是否仍在牌局中（未弃牌）
+                    'is_aggressor': False,  # 是否是当前轮次进攻方（最后加注者）
+                    'last_action': 'call',  # 最近一次动作: fold/check/call/raise
+                    'action_history': {  # 各阶段动作记录
+                        'preflop': ['raise', 'call'],
+                        'flop': ['check']
+                    },
+                    'stats': {  # 动态统计指标（持续更新）
+                        'vpip': 0.35,  # 入池率（主动投入筹码频率）
+                        'pfr': 0.22,  # 翻牌前加注率
+                        'aggression': 0.68,  # 激进指数（加注次数/总动作次数）
+                        'cbet': 0.75  # 持续下注率（作为进攻方时的下注概率）
+                    }
+                }
+            ],
+
+            # 当前轮次动作历史（本阶段已发生的动作）
+            'action_sequence': [
+                {'player': 'P2', 'action': 'raise', 'amount': 500},
+                {'player': 'P1', 'action': 'call', 'amount': 500}
+            ],
+
+            # 特殊状态标识
+            'is_blind': {  # 盲注状态
+                'small_blind': True,  # 是否是小盲注
+                'big_blind': False
+            },
+            'all_in_players': ['P3'],  # 已全下的玩家列表
+            'min_raise': 1000,  # 当前最小加注额度
+            'timestamp': 1625097600.123  # 时间戳（用于时序分析）
+        }
+        return game_state
+
     def enabled(self):
         return self.card1 and self.card2 and self.pool and self.seat
 

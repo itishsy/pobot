@@ -7,6 +7,7 @@ from poker.game import Game, Section
 from poker.action import Action
 from poker.utils import *
 from poker.strategies.strategy import Strategy
+from ai.agent import PokerAIAgent
 
 
 class TableImage:
@@ -142,16 +143,19 @@ class GameEngine:
         return self.is_start
 
     def load_game(self, section):
-        if not self.game:
-            self.game = Game(section)
-            return True
-        if self.game.card1 != section.card1 or self.game.card2 != section.card2 or self.game.seat != section.seat:
+        if self.is_new_game(section):
             self.game = Game(section)
             return True
         if not section.equals(self.game.sections[-1]):
             self.game.append_section(section)
             return True
         return False
+
+    def is_new_game(self, section):
+        return (not self.game
+                or self.game.card1 != section.card1
+                or self.game.card2 != section.card2
+                or self.game.seat != section.seat)
 
     def do_action(self):
         self.print()
@@ -182,6 +186,7 @@ class GameEngine:
                 self.game.stage, self.game.sections[-1].hand_score, self.game.action))
 
     def start(self):
+        agent = PokerAIAgent()
         strategy = Strategy()
         while True:
             if self.active():
@@ -190,7 +195,9 @@ class GameEngine:
                     table = TableImage(image, self.ocr)
                     sec = table.create_section()
                     if sec and sec.enabled() and self.load_game(sec):
-                        self.game.action = strategy.predict_action(self.game)
+                        # self.game.action = strategy.predict_action(self.game)
+                        self.game.action = agent.predict_action(sec.game_state())
+                        agent.learn(sec.balance)
                         sec.action = self.game.action
                         if sec.stage == 'PreFlop' and sec.action == 'fold' and len(self.game.sections) == 1:
                             # PreFlop第一輪就fold掉的，不保存
