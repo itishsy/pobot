@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from adaptive_learner import AdaptiveLearner
-from bankroll_manager import BankrollManager
+from poker.ai.adaptive_learner import AdaptiveLearner
+from poker.ai.bankroll_manager import BankrollManager
 
 
 class PokerAIAgent:

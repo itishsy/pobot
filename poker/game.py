@@ -167,7 +167,7 @@ class Game(BaseModel):
 
     def get_episode(self):
         episode_data = []
-        if self.sections and len(self.sections)>0:
+        if self.sections and len(self.sections) > 0:
             for sec in self.sections:
                 episode_data.append({
                     'state': sec.get_state(),
@@ -236,33 +236,24 @@ class Section(BaseModel):
                 and self.seat == sec.seat)
 
     def get_state(self):
-        community_cards = {
-                'preflop': [],  # 翻牌前无公共牌
-                'flop': [],  # 翻牌圈3张
-                'turn': [],  # 转牌圈4张
-                'river': []  # 河牌圈5张
-            }
+        community_cards = []
         if self.stage == 'flop':
-            community_cards['flop'] = [self.card3, self.card4, self.card5]
+            community_cards = [self.card3, self.card4, self.card5]
         elif self.stage == 'turn':
-            community_cards['flop'] = [self.card3, self.card4, self.card5]
-            community_cards['turn'] = [self.card3, self.card4, self.card5, self.card6]
+            community_cards = [self.card3, self.card4, self.card5, self.card6]
         elif self.stage == 'river':
-            community_cards['flop'] = [self.card3, self.card4, self.card5]
-            community_cards['turn'] = [self.card3, self.card4, self.card5, self.card6]
-            community_cards['river'] = [self.card3, self.card4, self.card5, self.card6, self.card7]
+            community_cards = [self.card3, self.card4, self.card5, self.card6, self.card7]
+        players = []
 
         # 游戏状态示例（Python字典结构）
         game_state = {
             # 基础牌局信息
             'stage': self.stage,  # 当前阶段: preflop/flop/turn/river
             'pot': self.pool,  # 当前底池总金额（单位：筹码）
-            'my_hand': [self.card1, self.card2],  # 自己的两张底牌（牌面字符串表示）
-            'my_stack': self.balance,  # 自己的剩余筹码量
-            'my_position': self.seat,  # 自己的位置: BTN/SB/BB/UTG/MP
-
-            # 公共牌信息（根据阶段动态变化）
-            'community_cards': community_cards,
+            'hand': [self.card1, self.card2],  # 自己的两张底牌（牌面字符串表示）
+            'stack': self.balance,  # 自己的剩余筹码量
+            'position': self.seat,  # 自己的位置: BTN/SB/BB/UTG/MP
+            'community_cards': community_cards,     # 公共牌信息
 
             # 入池玩家信息（包含自己）
             'players': [

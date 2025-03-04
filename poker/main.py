@@ -144,7 +144,7 @@ class GameEngine:
 
     def load_game(self, section):
         if self.is_new_game(section):
-            reward = section.balance - self.game.sections[-1].balance
+            # reward = section.balance - self.game.sections[-1].balance
             self.game = Game(section)
             return True
         if not section.equals(self.game.sections[-1]):
@@ -187,7 +187,7 @@ class GameEngine:
                 self.game.stage, self.game.sections[-1].hand_score, self.game.action))
 
     def start(self):
-        agent = PokerAIAgent()
+        # agent = PokerAIAgent()
         strategy = Strategy()
         while True:
             if self.active():
@@ -196,9 +196,9 @@ class GameEngine:
                     table = TableImage(image, self.ocr)
                     sec = table.create_section()
                     if sec and sec.enabled() and self.load_game(sec):
-                        # self.game.action = strategy.predict_action(self.game)
-                        self.game.action = agent.predict_action(sec.get_state())
-                        agent.learn(sec.balance)
+                        self.game.action = strategy.predict_action(self.game)
+                        # self.game.action = agent.predict_action(sec.get_state())
+                        # agent.learn(sec.balance)
                         sec.action = self.game.action
                         if sec.stage == 'PreFlop' and sec.action == 'fold' and len(self.game.sections) == 1:
                             # PreFlop第一輪就fold掉的，不保存
@@ -220,7 +220,7 @@ def test_workflow(file_name='table_image.jpg'):
 
 
 if __name__ == '__main__':
-    # ge = GameEngine()
-    # ge.start()
-    test_workflow('image/20250209132704/2.jpg')
+    ge = GameEngine()
+    ge.start()
+    # test_workflow('image/20250209132704/2.jpg')
 

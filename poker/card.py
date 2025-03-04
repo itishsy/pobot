@@ -4,6 +4,9 @@ import random
 from poker.config import BB
 from itertools import combinations
 
+suits = ['s', 'h', 'c', 'd']
+ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
+
 pre_flop_score = {
         'AA': 88.88, 'KK': 85.52,
         'QQ': 79.10, 'AKs': 78.60, 'JJ': 77.10, 'TT': 73.61, 'AQs': 71.88, 'AKo': 70.71,
@@ -49,9 +52,7 @@ pre_flop_score = {
 class Cards:
 
     def __init__(self):
-        self.ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
-        self.suits = ['s', 'h', 'c', 'd']
-        self.deck = [rank + suit for rank in self.ranks for suit in self.suits]
+        self.deck = [rank + suit for rank in ranks for suit in suits]
 
     Straight_Flush = 9000
     Four_Of_A_Kind = 8000
@@ -65,7 +66,7 @@ class Cards:
 
     def card_index(self, card):
         rank = card[:-1]
-        return self.ranks.index(rank)
+        return ranks.index(rank)
 
     def card_value(self, card):
         return self.card_index(card) + 2
@@ -89,7 +90,7 @@ class Cards:
         # 判断是否同花顺
         is_straight = False
         is_flush = len(set(suits_list)) == 1
-        straight_ranks = [self.ranks.index(rank) for rank in ranks_list]
+        straight_ranks = [ranks.index(rank) for rank in ranks_list]
         if max(straight_ranks) - min(straight_ranks) == 4 and len(set(straight_ranks)) == 5:
             is_straight = True
         if is_straight and is_flush:
@@ -163,26 +164,26 @@ class Cards:
         m2 = val // 100 % 100 - 2   # 中间2位
         t2 = val % 100 - 2          # 最后2位
         if val >= self.Straight_Flush:
-            s = '同花顺' + self.ranks[t2]
+            s = '同花顺' + ranks[t2]
         elif val >= self.Four_Of_A_Kind:
-            s = '四条' + self.ranks[m2] + ',' + self.ranks[t2]
+            s = '四条' + ranks[m2] + ',' + ranks[t2]
         elif val >= self.Full_House:
-            s = '葫芦' + self.ranks[m2] + ',' + self.ranks[t2]
+            s = '葫芦' + ranks[m2] + ',' + ranks[t2]
         elif val >= self.Flush:
-            s = '同花' + self.ranks[t2]
+            s = '同花' + ranks[t2]
         elif val >= self.Straight:
-            s = '顺子' + self.ranks[t2]
+            s = '顺子' + ranks[t2]
         elif val >= self.Three_Of_A_Kind:
-            s = '三条' + self.ranks[m2] + ',' + self.ranks[t2]
+            s = '三条' + ranks[m2] + ',' + ranks[t2]
         elif val >= self.Two_Pair:
-            s = '两对' + self.ranks[m2] + ',' + self.ranks[t2]
+            s = '两对' + ranks[m2] + ',' + ranks[t2]
         elif val >= self.Pair:
-            s = '一对' + self.ranks[m2] + ',' + self.ranks[t2]
+            s = '一对' + ranks[m2] + ',' + ranks[t2]
         else:
-            s = ('高牌' + self.ranks[val // 1000 % 10 + 3] + ','
-                 + self.ranks[val // 100 % 10 + 3] + ','
-                 + self.ranks[val // 10 % 10 + 3] + ','
-                 + self.ranks[val % 10 + 3])
+            s = ('高牌' + ranks[val // 1000 % 10 + 3] + ','
+                 + ranks[val // 100 % 10 + 3] + ','
+                 + ranks[val // 10 % 10 + 3] + ','
+                 + ranks[val % 10 + 3])
         return s
 
 
@@ -295,9 +296,7 @@ class Hand:
 
 
 if __name__ == '__main__':
-    print ((8000 - 11) / 80)
-
-    # hand1 = Hand('Ts', 'Kd')
+    hand1 = Hand('Ts', 'Kd')
     # hand.set_board('Ks', 'Kc', 'Qc', 'Qd')
     # rate = kk.win_rate(['Ts5c', 'AsAc'])
     # rate = kk.get_score()
