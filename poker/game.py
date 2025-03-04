@@ -49,6 +49,7 @@ class Game(BaseModel):
     seat = IntegerField()  # 座位
     stage = CharField()  # 最终阶段
     created = DateTimeField()
+    reward = FloatField()  # 收益
 
     players = []
     sections = []
@@ -159,6 +160,23 @@ class Game(BaseModel):
         return '手牌: {},{} 位置: {}'.format(
             self.card1, self.card2, self.seat)
 
+    def get_state(self):
+        if self.sections and len(self.sections)>0:
+            return self.sections[-1].get_state()
+        return None
+
+    def get_episode(self):
+        episode_data = []
+        if self.sections and len(self.sections)>0:
+            for sec in self.sections:
+                episode_data.append({
+                    'state': sec.get_state(),
+                    'action': sec.action,
+                    'reward': 0,
+                    'final_reward': self.reward
+                })
+        return episode_data
+
 
 # 牌桌信息
 class Section(BaseModel):
@@ -217,7 +235,7 @@ class Section(BaseModel):
                 and self.card5 == sec.card5 and self.card6 == sec.card6 and self.card7 == sec.card7
                 and self.seat == sec.seat)
 
-    def game_state(self):
+    def get_state(self):
         community_cards = {
                 'preflop': [],  # 翻牌前无公共牌
                 'flop': [],  # 翻牌圈3张

@@ -53,11 +53,11 @@ class AdaptiveLearner:
     """自适应学习系统"""
 
     def __init__(self):
-        # 策略网络（主网络）
+        # 策略网络（主网络）策略网络：实时更新的主网络，负责生成当前策略
         self.policy_net = PokerAI()
-        # 目标网络（延迟更新，稳定训练）
+        # 目标网络（延迟更新，稳定训练） 定期从策略网络同步参数，用于稳定Q值估算
         self.target_net = PokerAI()
-        # 同步目标网络参数
+        # 同步目标网络参数. 双网络设计目的：解决强化学习中的"移动目标"问题 减少Q值过估计（Overestimation） 提高训练稳定性
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
         # 优化器：AdamW（带权重衰减的Adam）
