@@ -294,7 +294,6 @@ class Hand:
         class_name = self.evaluator.class_to_string(hand_class)
         return strength, class_name
 
-
 if __name__ == '__main__':
     hand1 = Hand('Ts', 'Kd')
     # hand.set_board('Ks', 'Kc', 'Qc', 'Qd')
