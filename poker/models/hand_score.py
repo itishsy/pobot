@@ -5,13 +5,15 @@ from datetime import datetime
 from itertools import combinations
 
 
-class HandScore(BaseModel):
-    id = AutoField()
-    hand = CharField()
-    score = FloatField()
+# class HandScore(BaseModel):
+#     id = AutoField()
+#     hand = CharField()
+#     score = FloatField()
 
 
 def eval_score(hand, num_simulations = 10000):
+    wins = 0
+    evaluator = Evaluator()
     for _ in range(num_simulations):
         try:
             # 创建新的牌堆
@@ -33,14 +35,13 @@ def eval_score(hand, num_simulations = 10000):
             board += deck.draw(5 - len(board))
 
             # 计算牌力
-            strength1 = self.evaluator.evaluate(self.hand, board)
-            strength2 = self.evaluator.evaluate(opponent_hand, board)
+            strength1 = evaluator.evaluate(hand, board)
+            strength2 = evaluator.evaluate(opponent_hand, board)
             if strength1 < strength2:
                 wins += 1
         except:
             wins += random.randint(0, 1)
     return wins / num_simulations
-
 
 def main():
     # 定义所有牌面
@@ -59,12 +60,11 @@ def main():
         if not any(card in hand for card in board):
             score = simulate()
             hand_str = ' '.join([Card.int_to_str(card) for card in hand])
-            print(f"手牌: {hand_str}, 强度得分: {score}")
+            print(f"hand: {hand_str}, score: {score}")
 
 
 if __name__ == '__main__':
-    hs = HandScore()
-    hand1 = ['As', 'Kc']
-    score1 = eval_score(hand)
-    print(f"hand: {hand1}, score: {score1}")
-    
+    # hs = HandScore()
+    hand = [Card.new('As'),  Card.new('Kc')]
+    score = eval_score(hand)
+    print(f"hand: {hand}, score: {score}")
