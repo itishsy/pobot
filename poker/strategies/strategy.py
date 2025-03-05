@@ -5,6 +5,7 @@ from poker.config import BB
 from decimal import Decimal
 from itertools import combinations
 import random
+from poker.models.hand_score import HandScore
 
 
 def fetch_by_level(cd, le):
@@ -80,8 +81,6 @@ class Strategy:
 
         call = game.sections[-1].call
         pot = game.sections[-1].pool
-        score = hand.get_score()
-        game.sections[-1].hand_score = score
         seat = game.seat
 
         if game.stage == 'PreFlop':
@@ -92,18 +91,19 @@ class Strategy:
             (4) 60>hand_score>50，有call、fold，有条件raise。 ev计算call及fold，有位置时，min-raise随机bb(2,4)
             (5) hand_score<50, 有fold，有条件call。 有位置时，min-raise随机bb(2,4)
             """
+            score = game.hand_score
             cev = pot * score - (100 - score) * call
-            if score >= 80:
+            if score >= 0.8:
                 # 超强牌，造大底池
                 if pot < 4 * BB:
                     return 'raise:{}'.format(random.randint(2, 4))
                 return 'raise:{}'.format(random.randint(4, 10))
-            elif 80 > score >= 70:
+            elif 0.8 > score >= 0.7:
                 # 强牌，控制底池到合适的大小
                 if call > 3 * BB:
                     return 'call'
                 return 'raise:{}'.format(2, 4)
-            elif 70 > score >= 60:
+            elif 0.7 > score >= 0.6:
                 # 中强牌，控制底池，避免参与过大的底池
                 if call < 2 * BB:
                     return 'raise:{}'.format(random.randint(1, 2))
@@ -111,27 +111,21 @@ class Strategy:
                     return 'call'
                 if cev == 0 and seat == 6 and random.randint(1, 3) == 1:
                     return 'raise:{}'.format(random.randint(1, 2))
-            elif 60 > score >= 50:
+            elif 0.6 > score >= 0.55:
                 # 中等牌，避免参与过大的底池
                 if pot < 30 * BB:
                     if cev > 0:
                         return 'call'
                     if cev == 0 and seat == 6 and random.randint(1, 3) == 1:
                         return 'raise:{}'.format(random.randint(1, 2))
-            elif 40 < score < 50:
+            elif 0.55 < score < 0.5:
                 # 弱牌，小底池有位置可参与
                 if pot < 20 * BB and seat in (1, 2, 5, 6) and cev > 0 and random.randint(1, 3) == 1:
                     return 'call'
-
-            # args = {
-            #     'stage': 'PreFlop',
-            #     'hand_score': hand_score,
-            #     'pool': pot,
-            #     'seat': game.seat
-            # }
-            # act = eval_cond(self.action_cond, args)
         else:
-            win_rate = hand.win_rate(game.stage, self.predict_ranges(game))
+            score = hand.get_score()
+            opponent_ranges = self.predict_ranges(game)
+            win_rate = hand.win_rate(opponent_ranges)
             raise_amt = pot * win_rate / (1 - win_rate)
             if raise_amt >= call:
                 raise_num = int(raise_amt/call)
@@ -149,44 +143,24 @@ class Strategy:
         :param game:
         :return:
         """
-
         player_pre_act = 'raise、call、3bet、check'   # 翻牌前行动。加注通常表示较强的手牌，而跟注可能意味着中等或投机性手牌。
         player_flop_act = '持续bet、check-raise'   # 翻牌后行动。
         player_balance = 100    # 筹码量。 短筹码玩家倾向于玩得更紧，而深筹码玩家可能更激进，尝试利用筹码优势进行诈唬或价值下注。
         player_amt = 6      # 翻牌后下注尺度。大额下注通常表示强牌或诈唬,小额下注可能意味着中等牌力或试探性下注
         player_style = '0, 1, 2'  # 历史行为。 紧凶、松凶、被动。紧凶玩家加注时通常有强牌，而松凶玩家可能用更宽的范围加注
         board_style = '单张成顺、单张成花、卡顺、三张花、'   # 牌面结构。 湿润牌面下注，对手可能有更多听牌或成牌
-
-        # args = {
-        #     'stage': game.stage,
-        #     'call': game.sections[-1].call,
-        #     'pool': int(game.sections[-1].pool / Decimal(str(BB))),
-        # }
-        # opponent_range_rate = eval_cond(self.range_cond, args).split('-')
         pot_bb = 2
         for i in range(len(game.sections)):
             if game.sections[i].stage == 'PreFlop':
                 pot_bb = int(game.sections[-1].pool / BB)
         if 1 < pot_bb <= 3:
-            opponent_range_rate = (0.2, 0.6)
+            opponent_range = HandScore.get_ranges(0.2, 0.6)
         elif 3 < pot_bb <= 10:
-            opponent_range_rate = (0.4, 0.9)
+            opponent_range = HandScore.get_ranges(0.4, 0.9)
         elif 10 < pot_bb <= 50:
-            opponent_range_rate = (0.5, 0.9)
+            opponent_range = HandScore.get_ranges(0.5, 0.9)
         else:
-            opponent_range_rate = (0.55, 0.9)
-
-        game.sections[-1].opponent_range_rate = opponent_range_rate
-        opponent_range = []
-        for key, val in hands_win_rate.items():
-            value = val / 100
-            if opponent_range_rate[0] <= value <= opponent_range_rate[1]:
-                if key[0] == key[1] or key[2] == 'o':
-                    for combination in combinations(suits, 2):
-                        opponent_range.append(key[0]+combination[0]+key[1]+combination[1])
-                elif key[2] == 's':
-                    for suit in suits:
-                        opponent_range.append(key[0]+suit+key[1]+suit)
+            opponent_range = HandScore.get_ranges(0.55, 0.9)
         return opponent_range
 
     def nuts_rate(self, game):

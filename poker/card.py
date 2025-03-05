@@ -252,40 +252,37 @@ class Hand:
                 stronger_hands.add(sorted_hand)
         return stronger_hands
 
-    def win_rate(self, stage, ranges):
-        if stage == 'PreFlop':
-            return self.get_score() / 100
-        else:
-            wins = 0
-            num_simulations = 1000
-            for _ in range(num_simulations):
-                try:
-                    # 底牌范围中随机抽取一手牌
-                    opponent_cards = ranges[np.random.randint(0, len(ranges))]
-                    opponent_hand = [Card.new(opponent_cards[0:2]), Card.new(opponent_cards[2:4])]
+    def win_rate(self, ranges):
+        wins = 0
+        num_simulations = 5000
+        for _ in range(num_simulations):
+            try:
+                # 底牌范围中随机抽取一手牌
+                opponent_cards = ranges[np.random.randint(0, len(ranges))]
+                opponent_hand = [Card.new(opponent_cards[0:2]), Card.new(opponent_cards[2:4])]
 
-                    # 跳过重叠的牌
-                    if (opponent_hand[0] == self.hand[0] or opponent_hand[0] == self.hand[1] or
-                            opponent_hand[1] == self.hand[0] or opponent_hand[1] == self.hand[1]):
-                        continue
+                # 跳过重叠的牌
+                if (opponent_hand[0] == self.hand[0] or opponent_hand[0] == self.hand[1] or
+                        opponent_hand[1] == self.hand[0] or opponent_hand[1] == self.hand[1]):
+                    continue
 
-                    # 洗牌
-                    self.deck.shuffle()
-                    # 从牌堆中移除已出现的牌
-                    used_card = self.hand + opponent_hand + self.board
-                    for card in used_card:
-                        if self.deck.cards.__contains__(card):
-                            self.deck.cards.remove(card)
+                # 洗牌
+                self.deck.shuffle()
+                # 从牌堆中移除已出现的牌
+                used_card = self.hand + opponent_hand + self.board
+                for card in used_card:
+                    if self.deck.cards.__contains__(card):
+                        self.deck.cards.remove(card)
 
-                    board = self.board + self.deck.draw(5 - len(self.board))
-                    # 计算牌力
-                    strength1 = self.evaluator.evaluate(self.hand, board)
-                    strength2 = self.evaluator.evaluate(opponent_hand, board)
-                    if strength1 < strength2:
-                        wins += 1
-                except:
-                    wins += random.randint(0, 1)
-            return wins / num_simulations
+                board = self.board + self.deck.draw(5 - len(self.board))
+                # 计算牌力
+                strength1 = self.evaluator.evaluate(self.hand, board)
+                strength2 = self.evaluator.evaluate(opponent_hand, board)
+                if strength1 < strength2:
+                    wins += 1
+            except:
+                wins += random.randint(0, 1)
+        return wins / num_simulations
 
     def print_class_name(self, strength):
         # 步骤 4: 获取牌型等级
@@ -293,6 +290,7 @@ class Hand:
         # 步骤 5: 获取牌型名称
         class_name = self.evaluator.class_to_string(hand_class)
         return strength, class_name
+
 
 if __name__ == '__main__':
     hand1 = Hand('Ts', 'Kd')
