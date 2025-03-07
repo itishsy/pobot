@@ -81,7 +81,7 @@ class Strategy:
 
         call = game.sections[-1].call
         pot = game.sections[-1].pool
-        seat = game.seat
+        position = game.position
 
         if game.stage == 'PreFlop':
             """
@@ -109,18 +109,18 @@ class Strategy:
                     return 'raise:{}'.format(random.randint(1, 2))
                 if 2 * BB <= call <= 10 * BB or cev > 0:
                     return 'call'
-                if cev == 0 and seat == 6 and random.randint(1, 3) == 1:
+                if cev == 0 and position == 6 and random.randint(1, 3) == 1:
                     return 'raise:{}'.format(random.randint(1, 2))
             elif 0.6 > score >= 0.55:
                 # 中等牌，避免参与过大的底池
                 if pot < 30 * BB:
                     if cev > 0:
                         return 'call'
-                    if cev == 0 and seat == 6 and random.randint(1, 3) == 1:
+                    if cev == 0 and position == 6 and random.randint(1, 3) == 1:
                         return 'raise:{}'.format(random.randint(1, 2))
             elif 0.55 < score < 0.5:
                 # 弱牌，小底池有位置可参与
-                if pot < 20 * BB and seat in (1, 2, 5, 6) and cev > 0 and random.randint(1, 3) == 1:
+                if pot < 20 * BB and position in (1, 2, 5, 6) and cev > 0 and random.randint(1, 3) == 1:
                     return 'call'
         else:
             score = hand.get_score()
@@ -162,6 +162,61 @@ class Strategy:
         else:
             opponent_range = HandScore.get_ranges(0.55, 0.9)
         return opponent_range
+
+    def eval_ranges(game):
+        """
+        根据底池大小和入池玩家数评估对手的底牌范围。
+        :param pot: 底池大小
+        :param players: 入池玩家数
+        :return: 对手的底牌范围
+        """
+        # 假设我们使用大盲注（BB）作为参考单位
+        pot_bb = 2
+        for i in range(len(game.sections)):
+            if game.sections[i].stage == 'PreFlop':
+                pot_bb = int(game.sections[-1].pool / BB)
+        players = len(game.sections[-1].players)
+        if players == 1:
+            # 只有一个对手入池，通常表示他的手牌范围较宽
+            if pot_bb <= 3:
+                opponent_range = HandScore.get_ranges(0.2, 0.6)
+            elif 3 < pot_bb <= 10:
+                opponent_range = HandScore.get_ranges(0.3, 0.7)
+            elif 10 < pot_bb <= 50:
+                opponent_range = HandScore.get_ranges(0.5, 0.9)
+            else:
+                opponent_range = HandScore.get_ranges(0.55, 0.9)
+        elif players == 2:
+            # 两个对手入池，手牌范围相对较窄
+            if pot_bb <= 3:
+                opponent_range = HandScore.get_ranges(0.2, 0.75)
+            elif 3 < pot_bb <= 10:
+                opponent_range = HandScore.get_ranges(0.3, 0.88)
+            elif 10 < pot_bb <= 50:
+                opponent_range = HandScore.get_ranges(0.4, 0.9)
+            else:
+                opponent_range = HandScore.get_ranges(0.45, 0.9)
+        elif players == 3:
+            # 三个对手入池，手牌范围更窄
+            if pot_bb <= 3:
+                opponent_range = HandScore.get_ranges(0.3, 0.8)
+            elif 3 < pot_bb <= 10:
+                opponent_range = HandScore.get_ranges(0.4, 0.9)
+            elif 10 < pot_bb <= 50:
+                opponent_range = HandScore.get_ranges(0.5, 0.9)
+            else:
+                opponent_range = HandScore.get_ranges(0.55, 0.9)
+        else:
+            # 四个或更多对手入池，手牌范围最窄
+            if pot_bb <= 10:
+                opponent_range = HandScore.get_ranges(0.1, 0.7)
+            elif 10 < pot_bb <= 50:
+                opponent_range = HandScore.get_ranges(0.4, 0.9)
+            else:
+                opponent_range = HandScore.get_ranges(0.55, 0.9)
+
+        return opponent_range
+
 
     def nuts_rate(self, game):
         """

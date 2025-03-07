@@ -15,7 +15,7 @@ class Game(BaseModel):
         self.code = datetime.now().strftime('%Y%m%d%H%M%S')
         self.card1 = section.card1
         self.card2 = section.card2
-        self.seat = section.seat
+        self.position = section.position
         self.stage = section.stage
         self.hand_score = HandScore.get_score(self.card1, self.card2)
 
@@ -27,14 +27,14 @@ class Game(BaseModel):
             player_name = eval('section.player{}_name'.format(i))
             amount = eval('section.player{}_amount'.format(i))
             if player_name and amount:
-                seat = (section.seat + i) % 6
-                seat = 6 if seat == 0 else seat
-                exec('section.player{}_seat={}'.format(i, seat))
-                if seat == 1:
+                position = (section.position + i) % 6
+                position = 6 if position == 0 else position
+                exec('section.player{}_position={}'.format(i, position))
+                if position == 1:
                     exec("section.player{}_action='{}'".format(i, 'bet:{}'.format(SB)))
-                elif seat == 2:
+                elif position == 2:
                     exec("section.player{}_action='{}'".format(i, 'bet:{}'.format(BB)))
-                elif seat < section.seat and section.pool == Decimal(str(SB + BB)):
+                elif position < section.position and section.pool == Decimal(str(SB + BB)):
                     exec("section.player{}_action='{}'".format(i, 'fold'))
                 else:
                     exec("section.player{}_action='{}'".format(i, 'pending'))
@@ -49,7 +49,7 @@ class Game(BaseModel):
     card5 = CharField()  # 公共牌3
     card6 = CharField()  # 公共牌4
     card7 = CharField()  # 公共牌5
-    seat = IntegerField()  # 座位
+    position = IntegerField()  # 座位
     stage = CharField()  # 最终阶段
     created = DateTimeField()
     reward = FloatField()  # 收益
@@ -66,7 +66,7 @@ class Game(BaseModel):
     # game.code = datetime.now().strftime('%Y%m%d%H%M%S')
     # game.card1 = section.card1
     # game.card2 = section.card2
-    # game.seat = section.seat
+    # game.position = section.position
     # game.stage = section.stage
     # game.created = datetime.now()
     # game.players.clear()
@@ -77,9 +77,9 @@ class Game(BaseModel):
     #     amount = eval('section.player{}_amount'.format(i))
     #     # player = Player()
     #     if player_name and amount:
-    #         seat = (section.seat + i) % 6
-    #         seat = 6 if seat == 0 else seat
-    #         exec('section.player{}_seat={}'.format(i, seat))
+    #         position = (section.position + i) % 6
+    #         position = 6 if position == 0 else position
+    #         exec('section.player{}_position={}'.format(i, position))
     #         # player.name = player_name
     #         # player.amount = eval('sec.player{}_amount'.format(i))
     #         # player.status = 'playing' if player.amount else 'leave'
@@ -87,12 +87,12 @@ class Game(BaseModel):
     #         # act.stage = 'PreFlop'
     #         # act.round = 1
     #         # act.amount = player.amount
-    #         if seat == 1:
+    #         if position == 1:
     #             exec("section.player{}_action='{}'".format(i, 'bet:{}'.format(SB)))
-    #         elif seat == 2:
+    #         elif position == 2:
     #             exec("section.player{}_action='{}'".format(i, 'bet:{}'.format(BB)))
     #             # act.action = 'bet:{}'.format(BB)
-    #         elif seat < section.seat and section.pool == Decimal(str(SB+BB)):
+    #         elif position < section.position and section.pool == Decimal(str(SB+BB)):
     #             exec("section.player{}_action='{}'".format(i, 'fold'))
     #         else:
     #             exec("section.player{}_action='{}'".format(i, 'pending'))
@@ -123,8 +123,8 @@ class Game(BaseModel):
             pre_amount = eval('pre_section.player{}_amount'.format(i))
             pre_action = eval('pre_section.player{}_action'.format(i))
             if player_name and cur_amount:
-                pre_seat = eval("pre_section.player{}_seat".format(i))
-                exec("section.player{}_seat='{}'".format(i, pre_seat))
+                pre_position = eval("pre_section.player{}_position".format(i))
+                exec("section.player{}_position='{}'".format(i, pre_position))
                 if pre_amount > cur_amount:
                     exec("section.player{}_action='{}'".format(i, 'bet:{}'.format(pre_amount - cur_amount)))
                 elif pre_amount < cur_amount:
@@ -148,7 +148,7 @@ class Game(BaseModel):
                     #     if pre_section.pool == section.pool:
                     #         act.action = 'check'
                     #     else:
-                    #         if player.seat < section.seat:
+                    #         if player.position < section.position:
                     #             act.action = 'fold'
                     #         else:
                     #             act.action = 'pending'
@@ -161,7 +161,7 @@ class Game(BaseModel):
 
     def get_info(self):
         return '手牌: {},{} 位置: {}'.format(
-            self.card1, self.card2, self.seat)
+            self.card1, self.card2, self.position)
 
     def get_state(self):
         if self.sections and len(self.sections)>0:
@@ -189,7 +189,7 @@ class Section(BaseModel):
     id = AutoField()
     game_code = CharField()
     pool = FloatField()  # 底池
-    seat = IntegerField()  # 座位
+    position = IntegerField()  # 座位
     stage = CharField()  # 阶段
     balance = FloatField()  # 余额
     card1 = CharField()  # 手牌1
@@ -208,35 +208,35 @@ class Section(BaseModel):
 
     player1_name = CharField(null=True)  # 玩家1
     player1_amount = FloatField(null=True)  #
-    player1_seat = CharField(null=True)  #
+    player1_position = CharField(null=True)  #
     player1_action = CharField(null=True)  #
     player2_name = CharField(null=True)  # 玩家2
     player2_amount = FloatField(null=True)  #
-    player2_seat = CharField(null=True)  #
+    player2_position = CharField(null=True)  #
     player2_action = CharField(null=True)  #
     player3_name = CharField(null=True)  # 玩家3
     player3_amount = FloatField(null=True)  #
-    player3_seat = CharField(null=True)  #
+    player3_position = CharField(null=True)  #
     player3_action = CharField(null=True)  #
     player4_name = CharField(null=True)  # 玩家4
     player4_amount = FloatField(null=True)  #
-    player4_seat = CharField(null=True)  #
+    player4_position = CharField(null=True)  #
     player4_action = CharField(null=True)  #
     player5_name = CharField(null=True)  # 玩家5
     player5_amount = FloatField(null=True)  #
-    player5_seat = CharField(null=True)  #
+    player5_position = CharField(null=True)  #
     player5_action = CharField(null=True)  #
 
     def to_string(self):
         return ("手牌:{}|{}, 位置:{}, 底池:{}, 公共牌: {}|{}|{}|{}|{}, 玩家: {}|{}|{}|{}|{}"
-                .format(self.card1, self.card2, self.seat, self.pool,
+                .format(self.card1, self.card2, self.position, self.pool,
                         self.card3, self.card4, self.card5, self.card6, self.card7,
                         self.player1_name, self.player2_name, self.player3_name, self.player4_name, self.player5_name))
 
     def equals(self, sec):
         return (self.pool == sec.pool and self.card3 == sec.card3 and self.card4 == sec.card4
                 and self.card5 == sec.card5 and self.card6 == sec.card6 and self.card7 == sec.card7
-                and self.seat == sec.seat)
+                and self.position == sec.position)
 
     def get_state(self):
         community_cards = []
@@ -255,7 +255,7 @@ class Section(BaseModel):
             'pot': self.pool,  # 当前底池总金额（单位：筹码）
             'hand': [self.card1, self.card2],  # 自己的两张底牌（牌面字符串表示）
             'stack': self.balance,  # 自己的剩余筹码量
-            'position': self.seat,  # 自己的位置: BTN/SB/BB/UTG/MP
+            'position': self.position,  # 自己的位置: BTN/SB/BB/UTG/MP
             'community_cards': community_cards,     # 公共牌信息
 
             # 入池玩家信息（包含自己）
@@ -298,7 +298,7 @@ class Section(BaseModel):
         return game_state
 
     def enabled(self):
-        return self.card1 and self.card2 and self.pool and self.seat
+        return self.card1 and self.card2 and self.pool and self.position
 
 
 if __name__ == '__main__':

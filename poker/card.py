@@ -7,6 +7,14 @@ from itertools import combinations
 suits = ['s', 'h', 'c', 'd']
 ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
 
+def order_cards(self, card1, card2):
+    rank1 = card1[:-1]
+    rank2 = card2[:-1]
+    if ranks.index(rank1) > ranks.index(rank2):
+        return card1+card2
+    else:
+        return card2+card1
+
 pre_flop_score = {
         'AA': 88.88, 'KK': 85.52,
         'QQ': 79.10, 'AKs': 78.60, 'JJ': 77.10, 'TT': 73.61, 'AQs': 71.88, 'AKo': 70.71,

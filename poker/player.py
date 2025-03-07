@@ -6,7 +6,7 @@ class Player(BaseModel):
     id = AutoField()
     game_code = CharField()
     name = CharField()
-    seat = CharField()
+    position = CharField()
     status = CharField()
     amount = DecimalField()  # 起始金额
     actions = []

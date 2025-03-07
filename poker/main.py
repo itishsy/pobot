@@ -65,7 +65,7 @@ class TableImage:
         ocr_txt = self.ocr_txt(region)
         return fetch_amount(ocr_txt)
 
-    def fetch_seat(self):
+    def fetch_position(self):
         for i in range(6):
             position = eval('POSITION_BOTTOM_' + str(i))
             color = self.image.getpixel(position)
@@ -76,13 +76,13 @@ class TableImage:
     def create_section(self):
         pool = self.fetch_pool()
         card1 = self.fetch_card(1)
-        seat = self.fetch_seat()
-        if not pool or not card1 or not seat:
+        position = self.fetch_position()
+        if not pool or not card1 or not position:
             return
 
         sec = Section()
         sec.pool = pool
-        sec.seat = seat
+        sec.position = position
         sec.stage = 'PreFlop'
         sec.card1 = card1
         sec.card2 = self.fetch_card(2)
@@ -156,7 +156,7 @@ class GameEngine:
         return (not self.game
                 or self.game.card1 != section.card1
                 or self.game.card2 != section.card2
-                or self.game.seat != section.seat)
+                or self.game.position != section.position)
 
     def do_action(self):
         self.print()
@@ -177,10 +177,10 @@ class GameEngine:
         else:
             print("pool: {}, call: {}".format(sec.pool, sec.call))
 
-        if len(self.game.sections) > 1:
-            for player in self.game.players:
-                if player.actions and player.actions[-1].action != 'fold':
-                    print("{}: {}, {}".format(player.name, player.seat, player.actions[-1].action))
+        # if len(self.game.sections) > 1:
+            # for player in self.game.players:
+                # if player.actions and player.actions[-1].action != 'fold':
+                    # print("{}: {}, {}".format(player.name, player.position, player.actions[-1].action))
 
         if self.game.action:
             print("{} : hand_score --> {} action --> {}".format(

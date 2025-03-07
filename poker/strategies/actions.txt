@@ -37,10 +37,10 @@ actions
 				fold
 		50<hand_score<52
 			pool <= 3
-				seat in [1, 2, 6]
+				position in [1, 2, 6]
 					bet(2,4)
 			3 < pool <= 10
-				seat in [1, 2, 6]
+				position in [1, 2, 6]
 					call
 			pool > 10
 				fold
