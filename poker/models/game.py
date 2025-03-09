@@ -34,9 +34,13 @@ class State(BaseModel):
     hand = CharField()
     position = IntegerField()
 
+    stage = IntegerField()
     board = CharField()
     pot = FloatField()
-    stage = IntegerField()
+
+    balance = FloatField()
+    call = FloatField()
+
     players_data = TextField()
 
     action = IntegerField()
@@ -55,10 +59,12 @@ class State(BaseModel):
 
     def to_dict(self):
         return {
+            'hand': self.hand,
+            'position': self.position,
             'stage': self.stage,
-            'board': self.board,
+            'board': json.dumps(self.board),
             'pot': self.pot,
-            'players': self.players,
+            'players': json.dumps([obj.to_dict() for obj in self.players]),
             'action': self.action,
             'reward': self.reward
         }
@@ -90,7 +96,7 @@ class Game(BaseModel):
     def add_state(self, state):
         if state.hand != self.hand or state.position != self.position:
             if self.hand is not None:
-                self.save()
+                # self.save()
                 self.states.clear()
             self.code = datetime.now().strftime('%Y%m%d%H%M%S')
             self.hand = state.hand
@@ -98,8 +104,9 @@ class Game(BaseModel):
             first_state = copy.deepcopy(state)
             first_state.code = self.code
             first_state.pot = SB + BB
+            first_state.players.clear()
             for i in range(1, 6):
-                player = first_state.players[i-1]
+                player = state.players[i-1]
                 player.stack = player.stack + player.amount
                 first_state.players.append(player)
             self.states.append(first_state)
@@ -108,7 +115,9 @@ class Game(BaseModel):
         state.code = self.code
         self.set_players_action(state, self.states[-1])
         self.states.append(state)
-        self.state_data = json.dumps([obj.to_dict() for obj in self.states] if self.states else [])
+        data = [obj.to_dict() for obj in self.states] if self.states else []
+        self.state_data = json.dumps(data)
+        # self.state_data = json.dumps()
 
     @staticmethod
     def set_players_action(state, pre_state):

@@ -1,4 +1,5 @@
 import time
+from PIL import Image
 
 from poker.strategies.strategy import Strategy
 
@@ -23,13 +24,19 @@ class GameAgent:
                 state = self.ocr.fetch_state(image)
                 self.game.add_state(state)
                 print(state.to_dict())
-                action = self.strategy.predict_action(self.game)
-                self.rpa.do(action)
+                # action = self.strategy.predict_action(self.game)
+                # self.rpa.do(action)
                 time.sleep(3)
             time.sleep(2)
+
+    def test_ocr(self):
+        img1 = Image.open('table_image.jpg')
+        state = self.ocr.fetch_state(img1)
+        print(state.to_dict())
 
 
 if __name__ == '__main__':
     ga = GameAgent()
-    ga.start()
+    # ga.start()
+    ga.test_ocr()
 

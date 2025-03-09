@@ -53,8 +53,9 @@ class PokerOcr:
         stage.board = self.__board()
         stage.stage = 0 if len(stage.board) == 0 else len(stage.board) - 2
         stage.position = self.__pos()
-        stage.pot = self.__pos()
+        stage.pot = self.__ocr_amt(self.region_pool)
         stage.balance = self.__ocr_amt(self.region_balance)
+        stage.call = self.__ocr_amt(self.region_call_amount)
         stage.players = self.__players()
         return stage
 
@@ -137,7 +138,7 @@ class PokerOcr:
             self_pos = self.__pos()
             pls.append(Player(name=self.__ocr_txt((x, y, x+w, y+h)),
                               position=(self_pos + i) % 6 if self_pos != 5 else 6,
-                              stack=self.__ocr_amt((x, y+5, x+w, y+h+5)),
+                              stack=self.__ocr_amt((x, y+h-5, x+w, y+h+h-5)),
                               action='pending',
                               amount=self.__ocr_amt((bx, by, bx+bw, by+bh)))
                        )
