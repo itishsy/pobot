@@ -4,7 +4,7 @@ from poker.ai.adaptive_learner import AdaptiveLearner
 from poker.ai.bankroll_manager import BankrollManager
 
 
-class PokerAIAgent:
+class PokerAI:
     def __init__(self):
         self.learner = AdaptiveLearner()
         self.bankroll = BankrollManager()

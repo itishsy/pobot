@@ -27,7 +27,7 @@ class PokerRpa:
         win = self.__get_win()
         if win:
             image = pyautogui.screenshot(region=(win.left, win.top, win.width, win.height))
-            if match_color(image.getpixel(self.position_button_fold), self.color_button):
+            if match_color(image.getpixel(self.position_button_fold), self.color_button, diff=10):
                 return image
         return None
 

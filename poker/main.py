@@ -10,7 +10,7 @@ from poker.strategies.strategy import Strategy
 
 from poker.tools.ocr import PokerOcr
 from poker.tools.rpa import PokerRpa
-from ai.agent import PokerAIAgent
+from ai.ai import PokerAIAgent
 
 
 

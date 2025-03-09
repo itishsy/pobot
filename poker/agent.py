@@ -1,19 +1,20 @@
+import time
 
 from poker.strategies.strategy import Strategy
 
 from poker.tools.ocr import PokerOcr
 from poker.tools.rpa import PokerRpa
 from poker.models.game import Game
-from ai.agent import PokerAIAgent
+from poker.ai.ai import PokerAI
 
 
-class GameEngine:
+class GameAgent:
 
     def __init__(self):
         self.ocr = PokerOcr()
         self.rpa = PokerRpa()
         self.game = Game()
-        self.agent = Strategy()     # PokerAIAgent()
+        self.strategy = Strategy()     # PokerAIAgent()
 
     def start(self):
         while True:
@@ -22,11 +23,13 @@ class GameEngine:
                 state = self.ocr.fetch_state(image)
                 self.game.add_state(state)
                 print(state.to_dict())
-                action = self.agent.predict_action(self.game)
+                action = self.strategy.predict_action(self.game)
                 self.rpa.do(action)
+                time.sleep(3)
+            time.sleep(1)
 
 
 if __name__ == '__main__':
-    ge = GameEngine()
-    ge.start()
+    ga = GameAgent()
+    ga.start()
 
