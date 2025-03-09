@@ -58,7 +58,9 @@ class State(BaseModel):
             'stage': self.stage,
             'board': self.board,
             'pot': self.pot,
-            'players': self.players
+            'players': self.players,
+            'action': self.action,
+            'reward': self.reward
         }
 
 
@@ -73,16 +75,17 @@ class Game(BaseModel):
     stack = FloatField()
     reward = FloatField()
     state_data = TextField()  # 实际存储的JSON数据
-    
-    @property
-    def states(self):
-        """反序列化存储的JSON数据为State对象集合"""
-        return [State.from_dict(d) for d in json.loads(self.state_data or '[]')]
-    
-    @states.setter
-    def states(self, value):
-        """序列化State对象集合为JSON存储"""
-        self.state_data = json.dumps([obj.to_dict() for obj in value] if value else [])
+
+    states = []
+    # @property
+    # def states(self):
+    #     """反序列化存储的JSON数据为State对象集合"""
+    #     return [State.from_dict(d) for d in json.loads(self.state_data or '[]')]
+    #
+    # @states.setter
+    # def states(self, value):
+    #     """序列化State对象集合为JSON存储"""
+    #     self.state_data = json.dumps([obj.to_dict() for obj in value] if value else [])
 
     def add_state(self, state):
         if state.hand != self.hand or state.position != self.position:
@@ -92,10 +95,11 @@ class Game(BaseModel):
             self.code = datetime.now().strftime('%Y%m%d%H%M%S')
             self.hand = state.hand
             self.position = state.position
-            first_state = State()
+            first_state = copy.deepcopy(state)
             first_state.code = self.code
+            first_state.pot = SB + BB
             for i in range(1, 6):
-                player = copy.copy(state.players[i-1])
+                player = first_state.players[i-1]
                 player.stack = player.stack + player.amount
                 first_state.players.append(player)
             self.states.append(first_state)
@@ -104,6 +108,7 @@ class Game(BaseModel):
         state.code = self.code
         self.set_players_action(state, self.states[-1])
         self.states.append(state)
+        self.state_data = json.dumps([obj.to_dict() for obj in self.states] if self.states else [])
 
     @staticmethod
     def set_players_action(state, pre_state):

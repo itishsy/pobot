@@ -26,7 +26,7 @@ class GameAgent:
                 action = self.strategy.predict_action(self.game)
                 self.rpa.do(action)
                 time.sleep(3)
-            time.sleep(1)
+            time.sleep(2)
 
 
 if __name__ == '__main__':

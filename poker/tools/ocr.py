@@ -48,14 +48,15 @@ class PokerOcr:
 
     def fetch_state(self, image):
         self.image = image
-        return State.from_dict({
-            'hand': self.__hand(),                              # 手牌
-            'board': self.__board(),                            # 公共牌
-            'pot': self.__ocr_amt(self.region_pool),            # 底池金额
-            'position': self.__pos(),                           # 位置
-            'balance': self.__ocr_amt(self.region_balance),     # 余额
-            'players': self.__players()                         # 玩家
-        })
+        stage = State()
+        stage.hand = self.__hand()
+        stage.board = self.__board()
+        stage.stage = 0 if len(stage.board) == 0 else len(stage.board) - 2
+        stage.position = self.__pos()
+        stage.pot = self.__pos()
+        stage.balance = self.__ocr_amt(self.region_balance)
+        stage.players = self.__players()
+        return stage
 
     def __ocr_txt(self, region):
         crop_image = self.image.crop(region)
