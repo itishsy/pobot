@@ -2,19 +2,21 @@ from models.base import BaseModel, db
 from flask_peewee.db import CharField, IntegerField, DateTimeField, AutoField, FloatField, TextField
 from datetime import datetime
 import json
-
+import copy
+from poker.config import SB, BB
+from decimal import Decimal
 from poker.models.hand_score import HandScore
 from poker.card import order_cards
 
 
 class Player:
-    def __init__(self, name, position, stack):
+    def __init__(self, name, position, stack, action='pending', amount=None):
         self.name = name
         self.position = position
         self.stack = stack
-        self.action = None
-        self.amount = None
-        self.active = True
+        self.action = action
+        self.amount = amount
+        self.active = True if name else False
 
     def to_dict(self):
         return {
@@ -26,26 +28,30 @@ class Player:
             'active': self.active
         }
 
-class State:
-    def __init__(self, section):
-        self.pot = section.pool
-        self.stage = section.get_state()
-        self.players = []
-        self.board = []
 
-        if self.stage == 'flop':
-            self.board = [self.card3, self.card4, self.card5]
-        elif self.stage == 'turn':
-            self.board = [self.card3, self.card4, self.card5, self.card6]
-        elif self.stage == 'river':
-            self.board = [self.card3, self.card4, self.card5, self.card6, self.card7]
+class State(BaseModel):
+    code = CharField()
+    hand = CharField()
+    position = IntegerField()
 
-        for i in range(1, 6):
-            player_name = eval('section.player{}_name'.format(i))
-            player_amount = eval('section.player{}_amount'.format(i))
-            player_position = eval('section.player{}_position'.format(i))
-            self.players.append(Player(player_name, player_position, player_amount))
-            
+    board = CharField()
+    pot = FloatField()
+    stage = IntegerField()
+    players_data = TextField()
+
+    action = IntegerField()
+    reward = FloatField()
+    players = []
+
+    @staticmethod
+    def from_dict(data):
+        obj = State()
+        obj.pot = data['pot']
+        obj.stage = data['stage']
+        obj.board = data['board']
+        obj.players = data['players']
+        obj.players_data = json.dumps([obj.to_dict() for obj in obj.players] if obj.players else [])
+        return obj
 
     def to_dict(self):
         return {
@@ -54,19 +60,11 @@ class State:
             'pot': self.pot,
             'players': self.players
         }
-        
-    @classmethod
-    def from_dict(cls, data):
-        obj = cls()
-        obj.stage = data['stage']
-        obj.board = data['board']
-        obj.pot = data['pot']
-        obj.players = data['players']
-        return obj
+
 
 class Game(BaseModel):
     class Meta:
-        table_name = 'game_episode'
+        table_name = 'game'
 
     id = AutoField()
     code = CharField()
@@ -85,52 +83,86 @@ class Game(BaseModel):
     def states(self, value):
         """序列化State对象集合为JSON存储"""
         self.state_data = json.dumps([obj.to_dict() for obj in value] if value else [])
-    
 
-    def __init__(self, section, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.code = datetime.now().strftime('%Y%m%d%H%M%S')
-        self.hand = order_cards(section.card1, section.card2)
-        self.position = section.position
-        self.stage = section.stage
-        self.states = [State(section)] 
-        self.created = datetime.now()
+    def add_state(self, state):
+        if state.hand != self.hand or state.position != self.position:
+            if self.hand is not None:
+                self.save()
+                self.states.clear()
+            self.code = datetime.now().strftime('%Y%m%d%H%M%S')
+            self.hand = state.hand
+            self.position = state.position
+            first_state = State()
+            first_state.code = self.code
+            for i in range(1, 6):
+                player = copy.copy(state.players[i-1])
+                player.stack = player.stack + player.amount
+                first_state.players.append(player)
+            self.states.append(first_state)
 
-    def update_players_status(self):
-        """根据最新section更新所有state中玩家的动作"""
-        # 获取当前状态副本
-        updated_states = [s for s in self.states]
-        
-        # 只更新最新state的玩家动作
-        if updated_states:
-            state_size = len(updated_states)
-            if state_size == 1:
-                player_size = len(updated_states[0].players)
-                for i in range(1, 6):
-                    """1-5"""
-                    player_position = (self.position + i) % 6
-                    player_position = 6 if player_position == 0 else player_position
-                    player = updated_states[0].players[i-1]
-                    name = player['name']
-                    stack = player['stack']
-                    if name:
-                        player['position'] = player_position
-                        player['action'] = None
+        # 计算玩家action, 追加最新state
+        state.code = self.code
+        self.set_players_action(state, self.states[-1])
+        self.states.append(state)
+
+    @staticmethod
+    def set_players_action(state, pre_state):
+        dif_pot = state.pot - pre_state.pot
+        i_bet = -1
+        i_bet_amount = 0.0
+        for i in range(5):
+            if pre_state.players[i].action == 'fold':
+                state.players[i].action = 'fold'
+                continue
+
+            dif_stack = pre_state.players[i].stack - state.players[i].stack
+            if dif_pot > 0 and dif_stack == 0:
+                # 底池增加，玩家码量无变化
+                state.players[i].action = 'fold'
+                continue
+
+            if dif_pot == 0:
+                state.players[i].action = 'check'
+                continue
+
+            if dif_pot == dif_stack:
+                # 底池与玩家码量变化相等，一家下注
+                state.players[i].action = 'bet'
+                state.players[i].amount = dif_stack
+                continue
+
+            # 底池大于玩家码量变化。能整除，说明前bet+后call，不能整除，说明前bet+后raise. 会存在误差，先忽略
+            if i_bet < 0:
+                i_bet = i
+                i_bet_amount = dif_stack
+                state.players[i].action = 'bet'
+                state.players[i].amount = dif_stack
             else:
-                for i in range(size - 1):
-                    state = updated_states[i]
-                    for player in state.players:
-                        player['action'] = None
-
-        # 更新状态列表
-        self.states = updated_states
+                if dif_stack > i_bet_amount:
+                    i_bet = i
+                    i_bet_amount = dif_stack
+                    state.players[i].action = 'raise'
+                    state.players[i].amount = dif_stack
+                elif dif_stack < i_bet_amount:
+                    state.players[i].action = 'bet'
+                    state.players[i].amount = dif_stack
+                    state.players[i_bet].action = 'raise'
+                else:
+                    if state.players[i].position > state.players[i_bet].position:
+                        state.players[i].action = 'call'
+                    else:
+                        state.players[i].action = 'bet'
+                        state.players[i_bet].action = 'call'
 
     def to_dict(self):
         states = []
         for state in self.states:
-            state_dict = state.to_dict()
-            state_dict['players'] = [player.to_dict() for player in state.players]
-            states.append(state_dict)
+            states.append({
+                'stage': state.stage,
+                'board': state.board,
+                'pot': state.pot,
+                'players': [player.to_dict() for player in state.players]
+            })
         return {
             'hand': self.hand,
             'position': self.position,

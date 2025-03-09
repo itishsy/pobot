@@ -7,54 +7,14 @@ from itertools import combinations
 suits = ['s', 'h', 'c', 'd']
 ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
 
-def order_cards(self, card1, card2):
+
+def order_cards(card1, card2):
     rank1 = card1[:-1]
     rank2 = card2[:-1]
     if ranks.index(rank1) > ranks.index(rank2):
         return card1+card2
     else:
         return card2+card1
-
-pre_flop_score = {
-        'AA': 88.88, 'KK': 85.52,
-        'QQ': 79.10, 'AKs': 78.60, 'JJ': 77.10, 'TT': 73.61, 'AQs': 71.88, 'AKo': 70.71,
-        'AJs': 66.70, 'AQo': 65.80, 'KQs': 63.81, 'ATs': 62.50, 'KJs': 60.90, '99': 60.52, '88': 60.31,
-        'AJo': 59.98, 'QJs': 59.88, 'KQo': 59.78, 'ATo': 59.68, 'KTs': 59.58, 'QTs': 59.48, 'JTs': 59.38,
-        '77': 58.60, '66': 58.20, 'KJo': 57.60, 'QJo': 56.50, '55': 56.30, '44': 56.20, 'KTo': 55.80,
-        'T9s': 55.60, 'QTo': 55.10, 'A9s': 53.80, 'A8s': 53.74, '33': 53.10, '22': 53.01,
-        'JTo': 52.80, 'J9s': 52.70, 'A7s': 52.50, 'A6s': 52.40,
-        'A5s': 51.80, 'A4s': 51.60, 'A3s': 51.30, 'A2s': 51.05,
-        '98s': 50.80, '97s': 50.70, '87s': 50.60, '86s': 50.50, '76s': 50.50,
-        '75s': 49.50, '65s': 49.40, '54s': 49.30, '43s': 49.20,
-        'A9o': 46.90, 'K9s': 46.10, 'A8o': 46.80, 'A7o': 46.70,
-        'A6o': 45.60, 'A5o': 45.50, 'A4o': 45.40, 'A3o': 45.30, 'A2o': 45.20,
-        'K9o': 41.10, 'K8s': 36.10, 'K8o': 35.10, 'K7o': 35.10, 'K7s': 36.10, 'K6s': 36.10, 'K6o': 35.10,
-        'K5o': 35.10, 'K5s': 35.10, 'K4s': 35.10, 'K4o': 35.10, 'K3s': 35.10, 'K3o': 35.10, 'K2o': 35.10,
-        'K2s': 35.10,
-        'Q9o': 41.10, 'Q9s': 42.10, 'Q8o': 35.10, 'Q8s': 39.10, 'Q7s': 35.10, 'Q7o': 35.10, 'Q6s': 35.10,
-        'Q6o': 35.10,
-        'Q5o': 33.10, 'Q5s': 35.10, 'Q4o': 33.10, 'Q4s': 33.10, 'Q3s': 33.10, 'Q3o': 33.10, 'Q2s': 33.10,
-        'Q2o': 33.10,
-        'J9o': 35.10, 'J8o': 31.10, 'J8s': 33.10, 'J7s': 33.10, 'J7o': 31.10, 'J6o': 31.10, 'J6s': 31.10,
-        'J5s': 31.10,
-        'J5o': 30.10, 'J4s': 30.10, 'J4o': 30.10, 'J3s': 30.10, 'J3o': 30.10, 'J2o': 30.10, 'J2s': 30.10,
-        'T9o': 36.10,
-        'T8o': 30.10, 'T8s': 39.10, 'T7s': 30.10, 'T7o': 30.10, 'T6o': 30.10, 'T6s': 30.10, 'T5s': 30.10,
-        'T5o': 30.10,
-        'T4o': 27.10, 'T4s': 27.10, 'T3o': 27.10, 'T3s': 27.10, 'T2s': 27.10, 'T2o': 27.10, '98o': 32.10,
-        '97o': 32.10,
-        '96s': 33.10, '96o': 27.10, '95s': 27.10, '95o': 27.10, '94o': 27.10, '94s': 27.10, '93o': 27.10,
-        '93s': 27.10,
-        '92s': 26.10, '92o': 26.10, '87o': 26.10, '86o': 26.10, '85s': 26.10, '85o': 26.10, '84o': 26.10,
-        '84s': 26.10,
-        '83s': 26.10, '83o': 26.10, '82o': 26.10, '82s': 26.10, '76o': 27.10, '75o': 27.10, '74s': 26.10,
-        '74o': 26.10,
-        '73o': 26.10, '73s': 26.10, '72s': 26.10, '72o': 25.10, '65o': 26.10, '64o': 26.10, '64s': 26.10,
-        '63s': 26.10,
-        '63o': 26.10, '62o': 26.10, '62s': 26.10, '54o': 26.10, '53o': 26.10, '53s': 26.10, '52o': 26.10,
-        '52s': 26.10,
-        '43o': 26.10, '42o': 26.10, '42s': 26.10, '32o': 26.10, '32s': 26.10,
-    }
 
 
 class Cards:
@@ -224,24 +184,15 @@ class Hand:
         高牌	      6186-7462
         :return: 返回0-100之间的手牌得分
         """
-        if not self.board or len(self.board) == 0:
-            if self.hands[0] == self.hands[2]:
-                hand_short = self.hands[0] + self.hands[0]
-            elif self.hands[1] == self.hands[3]:
-                hand_short = self.hands[0] + self.hands[2] + 's'
-            else:
-                hand_short = self.hands[0] + self.hands[2] + 'o'
-            return pre_flop_score.get(hand_short)
+        my_strength = self.evaluator.evaluate(self.hand, self.board)
+        print('牌型名称:', self.print_class_name(my_strength))
+        board_strength = -1
+        if len(self.board) == 5:
+            board_strength = self.evaluator.evaluate([], self.board)
+        if board_strength == my_strength:
+            return 49.99
         else:
-            my_strength = self.evaluator.evaluate(self.hand, self.board)
-            print('牌型名称:', self.print_class_name(my_strength))
-            board_strength = -1
-            if len(self.board) == 5:
-                board_strength = self.evaluator.evaluate([], self.board)
-            if board_strength == my_strength:
-                return 49.99
-            else:
-                return (8000 - my_strength) / 80
+            return (8000 - my_strength) / 80
 
     def stronger_range(self):
         cur_deck = Deck()
