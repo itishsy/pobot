@@ -16,8 +16,8 @@ class PokerOcr:
         self.hand1_suit_pos = (676, 751)
         self.hand2_pos = (718, 690)
         self.hand2_suit_pos = (737, 746)
-        self.board_post = (486, 408)
-        self.board_suit_post = (546, 486)
+        self.board_pos = (486, 408)
+        self.board_suit_pos = (546, 486)
         self.board_distance = 100
         self.card_wh = (45, 55)
         self.suit_color = ((0, 0, 0), (202, 23, 27), (29, 126, 45), (1, 30, 196))   # 4种花色的rgb
@@ -26,11 +26,11 @@ class PokerOcr:
         self.player1_pos = (185, 655)
         self.player3_pos = (666, 230)
         self.player4_pos = (1090, 310)
-        self.player_wh = (135, 31)
+        self.player_wh = (175, 31)
         self.player1_bet_pos = (350, 575)
         self.player3_bet_pos = (660, 315)
         self.player4_bet_pos = (945, 355)
-        self.player_bet_wh = (175, 61)
+        self.player_bet_wh = (175, 35)
 
         # 底池、位置
         self.region_pool = (729, 368, 817, 398)
@@ -54,14 +54,14 @@ class PokerOcr:
         stage.stage = 0 if len(stage.board) == 0 else len(stage.board) - 2
         stage.position = self.__pos()
         stage.pot = self.__ocr_amt(self.region_pool)
-        stage.balance = self.__ocr_amt(self.region_balance)
+        stage.stack = self.__ocr_amt(self.region_balance)
         stage.call = self.__ocr_amt(self.region_call_amount)
         stage.players = self.__players()
         return stage
 
     def __ocr_txt(self, region):
         crop_image = self.image.crop(region)
-        # region_image.save(cropped_image)
+        crop_image.save('c:\\Huangsy\\sourcecode\\pobot\\poker\\cropped_image.png')
         image_bytes = io.BytesIO()
         crop_image.save(image_bytes, format='PNG')
         image_bytes = image_bytes.getvalue()
@@ -73,6 +73,8 @@ class PokerOcr:
         if ocr_txt and '全押' not in ocr_txt:
             ocr_txt = ocr_txt.replace("o", "0")
             ocr_txt = ocr_txt.replace("O", "0")
+            ocr_txt = ocr_txt.replace("z", "2")
+            ocr_txt = ocr_txt.replace("Z", "2")
             length = len(ocr_txt)
             if length == 2:
                 part1 = ocr_txt[1:]
@@ -131,17 +133,24 @@ class PokerOcr:
     def __players(self):
         pls = []
         w, h, bw, bh = self.player_wh[0], self.player_wh[1], self.player_bet_wh[0], self.player_bet_wh[1]
+        self_pos = self.__pos()
         for i in range(1, 6):
-            idx = i if i in [1, 3, 4] else i-1
-            x, y = eval('self.player{}_pos[0]'.format(idx)), eval('self.player{}_pos[1]'.format(idx))
-            bx, by = eval('self.player{}_bet_pos[0]'.format(idx)), eval('self.player{}_bet_pos[1]'.format(idx))
-            self_pos = self.__pos()
+            if i in [1, 3, 4]:
+                x, y = eval('self.player{}_pos[0]'.format(i)), eval('self.player{}_pos[1]'.format(i))
+                bx, by = eval('self.player{}_bet_pos[0]'.format(i)), eval('self.player{}_bet_pos[1]'.format(i))
+            elif i == 2:
+                x, y = self.player1_pos[0], self.player4_pos[1]
+                bx, by = self.player1_bet_pos[0], self.player4_bet_pos[1]
+            else:
+                x, y = self.player4_pos[0], self.player1_pos[1]
+                bx, by = self.player4_bet_pos[0], self.player1_bet_pos[1]
+            amount = self.__ocr_amt((bx, by, bx+bw, by+bh))
+            position = (self_pos + i) % 6
             pls.append(Player(name=self.__ocr_txt((x, y, x+w, y+h)),
-                              position=(self_pos + i) % 6 if self_pos != 5 else 6,
+                              position=position if position > 0 else 6,
                               stack=self.__ocr_amt((x, y+h-5, x+w, y+h+h-5)),
                               action='pending',
-                              amount=self.__ocr_amt((bx, by, bx+bw, by+bh)))
-                       )
+                              amount=amount))
         return pls
 
     def __hand(self):
@@ -154,13 +163,13 @@ class PokerOcr:
 
     def __board(self):
         board = []
-        x, y = self.board_post[0], self.board_post[1]
+        x, y = self.board_pos[0], self.board_pos[1]
         w, h = self.card_wh[0], self.card_wh[1]
 
         for i in range(1, 6):
             x1 = x + (i - 1) * self.board_distance
-            pos = (self.board_suit_post[0]+(i - 1) * self.board_distance, self.board_suit_post[1])
-            card = self.__ocr_card((x1, y, x+w, x1+h), pos)
+            suit_pos = (self.board_suit_pos[0]+(i - 1) * self.board_distance, self.board_suit_pos[1])
+            card = self.__ocr_card((x1, y, x+w, x1+h), suit_pos)
             if card:
                 board.append(card)
             else:

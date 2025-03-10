@@ -38,6 +38,7 @@ class State:
     stack = None
     pot = None
     stage = None
+    call = None
     action = None
     reward = None
     players = []
@@ -50,6 +51,7 @@ class State:
             'stack': self.stack,
             'pot': self.pot,
             'stage': self.stage,
+            'call': self.call,
             'action': self.action,
             'reward': self.reward,
             'players': [obj.to_dict() for obj in self.players]

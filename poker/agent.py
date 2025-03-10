@@ -38,7 +38,7 @@ class GameAgent:
             time.sleep(2)
 
     def test_ocr(self):
-        img1 = Image.open('table_image.jpg')
+        img1 = Image.open('image/20250209132704/2.jpg')
         state = self.ocr.fetch_state(img1)
         print(state.to_dict())
 
