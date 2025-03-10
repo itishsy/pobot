@@ -52,7 +52,7 @@ class State:
             'stage': self.stage,
             'action': self.action,
             'reward': self.reward,
-            'players': self.players
+            'players': [obj.to_dict() for obj in self.players]
         }
 
 
@@ -83,6 +83,7 @@ class Game(BaseModel):
         if state.hand != self.hand or state.position != self.position:
             if self.hand is not None:
                 self.persist(state.stack)
+                self.states.clear()
             self.code = datetime.now().strftime('%Y%m%d%H%M%S')
             self.hand = state.hand
             self.position = state.position
@@ -156,19 +157,18 @@ class Game(BaseModel):
         self.reward = stack - self.stack
         self.state_data = json.dumps([obj.to_dict() for obj in self.states] if self.states else [])
         self.save()
-        self.states.clear()
 
     def to_dict(self):
-        states = []
-        for state in self.states:
-            states.append({
-                'stage': state.stage,
-                'board': state.board,
-                'pot': state.pot,
-                'players': [player.to_dict() for player in state.players]
-            })
+        # states = []
+        # for state in self.states:
+        #     states.append({
+        #         'stage': state.stage,
+        #         'board': state.board,
+        #         'pot': state.pot,
+        #         'players': [player.to_dict() for player in state.players]
+        #     })
         return {
             'hand': self.hand,
             'position': self.position,
-            'states': states
+            'states': self.states
         }
