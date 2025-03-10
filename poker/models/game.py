@@ -29,44 +29,30 @@ class Player:
         }
 
 
-class State(BaseModel):
-    code = CharField()
-    hand = CharField()
-    position = IntegerField()
+class State:
+    code = None
 
-    stage = IntegerField()
-    board = CharField()
-    pot = FloatField()
-
-    balance = FloatField()
-    call = FloatField()
-
-    players_data = TextField()
-
-    action = IntegerField()
-    reward = FloatField()
+    hand = []
+    board = []
+    position = None
+    stack = None
+    pot = None
+    stage = None
+    action = None
+    reward = None
     players = []
-
-    @staticmethod
-    def from_dict(data):
-        obj = State()
-        obj.pot = data['pot']
-        obj.stage = data['stage']
-        obj.board = data['board']
-        obj.players = data['players']
-        obj.players_data = json.dumps([obj.to_dict() for obj in obj.players] if obj.players else [])
-        return obj
 
     def to_dict(self):
         return {
             'hand': self.hand,
+            'board': self.board,
             'position': self.position,
-            'stage': self.stage,
-            'board': json.dumps(self.board),
+            'stack': self.stack,
             'pot': self.pot,
-            'players': json.dumps([obj.to_dict() for obj in self.players]),
+            'stage': self.stage,
             'action': self.action,
-            'reward': self.reward
+            'reward': self.reward,
+            'players': [obj.to_dict() for obj in self.players]
         }
 
 
@@ -96,11 +82,12 @@ class Game(BaseModel):
     def add_state(self, state):
         if state.hand != self.hand or state.position != self.position:
             if self.hand is not None:
-                # self.save()
+                self.persist(state.stack)
                 self.states.clear()
             self.code = datetime.now().strftime('%Y%m%d%H%M%S')
             self.hand = state.hand
             self.position = state.position
+            self.stack = state.stack
             first_state = copy.deepcopy(state)
             first_state.code = self.code
             first_state.pot = SB + BB
@@ -111,13 +98,12 @@ class Game(BaseModel):
                 first_state.players.append(player)
             self.states.append(first_state)
 
-        # 计算玩家action, 追加最新state
-        state.code = self.code
-        self.set_players_action(state, self.states[-1])
-        self.states.append(state)
-        data = [obj.to_dict() for obj in self.states] if self.states else []
-        self.state_data = json.dumps(data)
-        # self.state_data = json.dumps()
+        pre_state = self.states[-1]
+        if state.stage != pre_state.stage or state.pot != pre_state.pot:
+            # 计算玩家action, 追加最新state
+            state.code = self.code
+            self.set_players_action(state, pre_state)
+            self.states.append(state)
 
     @staticmethod
     def set_players_action(state, pre_state):
@@ -168,17 +154,22 @@ class Game(BaseModel):
                         state.players[i].action = 'bet'
                         state.players[i_bet].action = 'call'
 
+    def persist(self, stack):
+        self.reward = stack - self.stack
+        self.state_data = json.dumps([obj.to_dict() for obj in self.states] if self.states else [])
+        self.save()
+
     def to_dict(self):
-        states = []
-        for state in self.states:
-            states.append({
-                'stage': state.stage,
-                'board': state.board,
-                'pot': state.pot,
-                'players': [player.to_dict() for player in state.players]
-            })
+        # states = []
+        # for state in self.states:
+        #     states.append({
+        #         'stage': state.stage,
+        #         'board': state.board,
+        #         'pot': state.pot,
+        #         'players': [player.to_dict() for player in state.players]
+        #     })
         return {
             'hand': self.hand,
             'position': self.position,
-            'states': states
+            'states': self.states
         }
