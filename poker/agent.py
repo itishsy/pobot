@@ -1,6 +1,6 @@
 import time
 
-from poker.strategies.strategy import Strategy
+from poker.strategies.default_strategy import Strategy
 
 from poker.tools.ocr import PokerOcr
 from poker.tools.rpa import PokerRpa
@@ -14,7 +14,15 @@ class GameAgent:
         self.ocr = PokerOcr()
         self.rpa = PokerRpa()
         self.game = Game()
-        self.strategy = Strategy()     # PokerAIAgent()
+        self.strategy = Strategy()
+        self.pokerAi = PokerAI()
+
+    def predict_action(self, ai=False):
+        if ai:
+            game_state = self.game.states[-1]
+            return self.pokerAi.eval_action(game_state)
+        else:
+            return self.strategy.eval_action(self.game)
 
     def start(self):
         while True:
@@ -23,8 +31,8 @@ class GameAgent:
                 state = self.ocr.fetch_state(image)
                 self.game.add_state(state)
                 print(state.to_dict())
-                action = self.strategy.predict_action(self.game)
-                self.rpa.do(action)
+                action, raised = self.predict_action()
+                self.rpa.do(action, raised=raised)
                 time.sleep(3)
             time.sleep(2)
 

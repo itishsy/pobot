@@ -10,7 +10,7 @@ class PokerAI:
         self.bankroll = BankrollManager()
         self.game_state = None
 
-    def predict_action(self, game_state):
+    def eval_action(self, game_state):
         # 获取当前处理后的状态
         processed_state = self.learner.state_processor.process(game_state)
 

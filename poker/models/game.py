@@ -104,11 +104,13 @@ class Game(BaseModel):
                 first_state.players.append(player)
             self.states.append(first_state)
 
-        # 计算玩家action, 追加最新state
-        state.code = self.code
-        self.set_players_action(state, self.states[-1])
-        self.states.append(state)
-        self.state_data = json.dumps([obj.to_dict() for obj in self.states] if self.states else [])
+        pre_state = self.states[-1]
+        if state.stage != pre_state.stage or state.pot != pre_state.pot:
+            # 计算玩家action, 追加最新state
+            state.code = self.code
+            self.set_players_action(state, pre_state)
+            self.states.append(state)
+            self.state_data = json.dumps([obj.to_dict() for obj in self.states] if self.states else [])
 
     @staticmethod
     def set_players_action(state, pre_state):
