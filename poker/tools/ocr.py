@@ -2,9 +2,8 @@ import ddddocr
 import io
 from PIL import Image
 
-from poker.tools.util import match_color, contain_color, ordered_hand
+from poker.tools.util import match_color, contain_color, ordered_hand, get_ocr_config
 from poker.models.game import State, Player
-from poker.config import current_ocr_config
 
 
 class PokerOcr:
@@ -12,21 +11,20 @@ class PokerOcr:
     def __init__(self):
         self.ocr = ddddocr.DdddOcr()
         self.image = None
-
-        hand, board, suit, player, btn, amount = current_ocr_config()
+        self.ocr_config = get_ocr_config()
 
         # region=(x1,y1,x2,y2)，其中x1,y1为区域左上角,x2,y2为区域右下角; 用wh来表示为(x1,y1,x1+w,y1+h)
         # 7张牌。
-        self.hand_region = hand.get('region')
-        self.hand1_pos = hand.get('card1_x1_y1')  # (645, 690)
-        self.hand1_suit_x_y = hand.get('')  # (676, 751)
-        self.hand2_pos = hand.get('')  # (718, 690)
-        self.hand2_suit_x_y = hand.get('')  # (737, 746)
-        self.board_x_y = board.get('')  # (486, 408)
-        self.board_suit_x_y = board.get('')  # (546, 486)
-        self.board_distance = board.get('')  # 105
-        self.card_w_h = board.get('')  # (45, 35)
-        self.suit_color = suit.get('')  # ((0, 0, 0), (202, 23, 27), (29, 126, 45), (1, 30, 196))   # 4种花色的rgb
+        self.hand_region = (645, 690, 800, 735)
+        self.hand1_pos = (645, 690)
+        self.hand1_suit_x_y = (676, 751)
+        self.hand2_pos = (718, 690)
+        self.hand2_suit_x_y = (737, 746)
+        self.board_x_y = (486, 408)
+        self.board_suit_x_y = (546, 486)
+        self.board_distance = 105
+        self.card_w_h = (45, 35)
+        self.suit_color = ((0, 0, 0), (202, 23, 27), (29, 126, 45), (1, 30, 196))   # 4种花色的rgb
 
         # 5个玩家: 名称、金额、打出金额。只需定位134,25可计算出来
         self.player1_x1_y1 = (185, 660)
