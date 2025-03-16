@@ -15,9 +15,9 @@ class PokerOcr:
         # region=(x1,y1,x2,y2)，其中x1,y1为区域左上角,x2,y2为区域右下角; 用wh来表示为(x1,y1,x1+w,y1+h)
         # 7张牌。
         self.hand_region = (645, 690, 800, 735)
-        # self.hand1_pos = (645, 690)
+        self.hand1_pos = (645, 690)
         self.hand1_suit_x_y = (676, 751)
-        # self.hand2_pos = (718, 690)
+        self.hand2_pos = (718, 690)
         self.hand2_suit_x_y = (737, 746)
         self.board_x_y = (486, 408)
         self.board_suit_x_y = (546, 486)
@@ -207,26 +207,27 @@ class PokerOcr:
         return pls
 
     def __hand(self):
-        # x1, y1 = self.hand1_pos[0], self.hand1_pos[1]
-        # x2, y2 = self.hand2_pos[0], self.hand2_pos[1]
-        # w, h = self.card_w_h[0], self.card_w_h[1]
-        # card1 = self.__ocr_card((x1, y1, x1+w, y1+h), self.hand1_suit_x_y)
-        # card2 = self.__ocr_card((x2, y2, x2+w, y2+h), self.hand2_suit_x_y)
-        two_card = self.__ocr_txt(self.hand_region)
-        card1, card2 = two_card[0], two_card[1]
-        if len(two_card) == 3:
-            if card1 == 1:
-                card1 = self.__card(two_card[0] + two_card[1])
-                card2 = self.__card(two_card[2])
-            else:
-                card1 = self.__card(two_card[0])
-                card2 = self.__card(two_card[1]+two_card[2])
-        elif len(two_card) == 4:
-            card1 = self.__card(two_card[0] + two_card[1])
-            card2 = self.__card(two_card[2] + two_card[3])
-        suit1 = self.__suit(self.hand1_suit_x_y)
-        suit2 = self.__suit(self.hand2_suit_x_y)
-        return ordered_hand([card1+suit1, card2+suit2])
+        x1, y1 = self.hand1_pos[0], self.hand1_pos[1]
+        x2, y2 = self.hand2_pos[0], self.hand2_pos[1]
+        w, h = self.card_w_h[0], self.card_w_h[1]
+        card1 = self.__ocr_card((x1, y1, x1+w, y1+h), self.hand1_suit_x_y)
+        card2 = self.__ocr_card((x2, y2, x2+w, y2+h), self.hand2_suit_x_y)
+        if card1 is None or card2 is None:
+            two_card = self.__ocr_txt(self.hand_region)
+            c1, c2 = two_card[0], two_card[1]
+            if len(two_card) == 3:
+                if c1 == "1":
+                    c1 = self.__card(two_card[0] + two_card[1])
+                    c2 = self.__card(two_card[2])
+                else:
+                    c1 = self.__card(two_card[0])
+                    c2 = self.__card(two_card[1]+two_card[2])
+            elif len(two_card) == 4:
+                c1 = self.__card(two_card[0] + two_card[1])
+                c2 = self.__card(two_card[2] + two_card[3])
+            card1 = c1 + self.__suit(self.hand1_suit_x_y)
+            card2 = c2 + self.__suit(self.hand2_suit_x_y)
+        return ordered_hand([card1, card2])
 
     def __board(self):
         board = []
@@ -256,11 +257,15 @@ class PokerOcr:
 
 if __name__ == '__main__':
     ocr = PokerOcr()
-    for i1 in range(1, 43):
+    # for i1 in range(1, 43):
         # img1 = Image.open('../image/20250209133629/{}.jpg'.format(i))
-        img1 = Image.open('../image/{}.jpg'.format(i1))
-        state = ocr.fetch_state(img1)
-        print(i1, state.to_dict())
+        # img1 = Image.open('../image/{}.jpg'.format(i1))
+        # state = ocr.fetch_state(img1)
+        # print(i1, state.to_dict())
+
+    img1 = Image.open('../image/None.jpg')
+    state = ocr.fetch_state(img1)
+    print(state.to_dict())
 
     # img2 = Image.open('../cropped_image2.jpg')
     # crop_image2 = img2.crop((0, 0, 118, 31))

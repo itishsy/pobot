@@ -66,17 +66,17 @@ class StrategicAnalyst:
         return wins / num_simulations
 
     def __pre_flop_action(self):
-        stage = self.state.stage
         position = self.state.position
         pot = self.state.pot
         call = self.state.call
         score = HandScore.get_score(self.state.hand[0], self.state.hand[1])
-        call_ev = pot * score - (100 - score) * call
+        call_ev = round(pot * score - (1 - score) * call, 4)
+        print('hand score:{}'.format(score), 'pot:{}'.format(pot), 'call_ev:{}'.format(call_ev))
         if score >= 0.8:
-            # 超强牌，造大底池
+            # 超强牌，造大底池ii
             if pot < 4 * BB:
                 return 'raise', random.randint(2, 4)
-            return 'raise', random.randint(4, 10)
+            return 'raise', random.randint(3, 6)
         elif 0.8 > score >= 0.7:
             # 强牌，控制底池到合适的大小
             if call > 3 * BB:

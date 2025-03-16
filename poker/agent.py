@@ -1,4 +1,6 @@
 import time
+from datetime import datetime
+
 
 from poker.strategies.default_strategy import Strategy
 
@@ -28,6 +30,7 @@ class GameAgent:
                     action, raised = self.ai.eval_action(self.game)
                     self.rpa.do(action, raised=raised)
                 except:
+                    image.save('image/{}.jpg'.format(datetime.now().strftime('%m%d%H%M%S')))
                     self.rpa.do('fold', raised=0)
                 time.sleep(3)
             time.sleep(2)

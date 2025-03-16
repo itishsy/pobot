@@ -161,8 +161,9 @@ class Game(BaseModel):
 
     def persist(self, stack):
         self.reward = stack - self.stack
+        self.hand = json.dumps(self.hand)
         self.state_data = json.dumps([obj.to_dict() for obj in self.states] if self.states else [])
-        # self.save()
+        self.save()
 
     def to_dict(self):
         # states = []
@@ -178,3 +179,8 @@ class Game(BaseModel):
             'position': self.position,
             'states': self.states
         }
+
+
+if __name__ == '__main__':
+    db.connect()
+    db.create_tables([Game])
