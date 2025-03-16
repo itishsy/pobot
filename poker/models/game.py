@@ -10,13 +10,16 @@ from poker.card import order_cards
 
 
 class Player:
-    def __init__(self, name, position, stack, action='pending', amount=None):
+    def __init__(self, name, position, stack, action='pending', active=None, amount=None):
         self.name = name
         self.position = position
         self.stack = stack
         self.action = action
         self.amount = amount
-        self.active = True if name else False
+        if active is None:
+            self.active = True if name else False
+        else:
+            self.active = active
 
     def to_dict(self):
         return {
@@ -159,7 +162,7 @@ class Game(BaseModel):
     def persist(self, stack):
         self.reward = stack - self.stack
         self.state_data = json.dumps([obj.to_dict() for obj in self.states] if self.states else [])
-        self.save()
+        # self.save()
 
     def to_dict(self):
         # states = []

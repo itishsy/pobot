@@ -4,6 +4,17 @@ def match_color(color1, color2, diff=100):
             abs(color1[2] - color2[2]) < diff)
 
 
+def contain_color(image, color):
+    width, height = image.size
+    # 遍历所有像素
+    for x in range(width):
+        for y in range(height):
+            current_rgb = image.getpixel((x, y))
+            if current_rgb == color:
+                return True
+    return False
+
+
 def ordered_hand(hand):
     rank1 = hand[0][:-1]
     rank2 = hand[1][:-1]

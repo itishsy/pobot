@@ -1,5 +1,5 @@
 import pyautogui
-from PIL import Image
+import random
 
 from poker.tools.util import match_color
 
@@ -36,14 +36,20 @@ class PokerRpa:
 
     def do(self, action, raised=0):
         if action in self.actions:
-            print(action, amount)
+            print(action, raised)
             if raised > 0:
                 pyautogui.moveTo(self.position_button_add_amount[0], self.position_button_add_amount[1], duration=0.2)
                 pyautogui.click(clicks=raised, interval=0.3)
-            act = getattr(self, '__{}'.format(action))
-            act()
-            pyautogui.moveTo(POSITION_BUTTON_FOLD[0] + random.randint(1, 100),
-                             POSITION_BUTTON_FOLD[1] + random.randint(100, 500) - 800,
+            if 'fold' == action:
+                self.__fold()
+            elif 'call' == action or 'check' == action:
+                self.__call()
+            elif 'raise' == action or 'bet' == action:
+                self.__raise()
+            # act = getattr(self, '__{}'.format(action))
+            # act()
+            pyautogui.moveTo(self.position_button_fold[0] + random.randint(1, 100),
+                             self.position_button_fold[1] + random.randint(100, 500) - 800,
                              duration=0.8)  # duration 参数表示鼠标移动的时间
         else:
             print('undefined action:', action)

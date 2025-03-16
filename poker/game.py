@@ -303,4 +303,4 @@ class Section(BaseModel):
 
 if __name__ == '__main__':
     db.connect()
-    db.create_tables([Section])
+    db.create_tables([Game])
