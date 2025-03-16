@@ -86,6 +86,7 @@ class Game(BaseModel):
 
     def add_state(self, state):
         if state.hand != self.hand or state.position != self.position:
+            print('new game')
             if self.hand is not None:
                 self.persist(state.stack)
                 self.states.clear()
@@ -103,12 +104,14 @@ class Game(BaseModel):
                 first_state.players.append(player)
             self.states.append(first_state)
 
+        sle = len(self.states)
         pre_state = self.states[-1]
         if state.stage != pre_state.stage or state.pot != pre_state.pot:
             # 计算玩家action, 追加最新state
             state.code = self.code
             self.set_players_action(state, pre_state)
             self.states.append(state)
+        print('states1:{}'.format(sle), 'states2:{}'.format(len(self.states)))
 
     @staticmethod
     def set_players_action(state, pre_state):
