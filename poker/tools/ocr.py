@@ -4,6 +4,7 @@ from PIL import Image
 
 from poker.tools.util import match_color, contain_color, ordered_hand
 from poker.models.game import State, Player
+from poker.config import WIN_1366_768
 
 
 class PokerOcr:
@@ -12,9 +13,12 @@ class PokerOcr:
         self.ocr = ddddocr.DdddOcr()
         self.image = None
 
+        win_config = WIN_1366_768
+        hand_config = win_config.get('hand')
+
         # region=(x1,y1,x2,y2)，其中x1,y1为区域左上角,x2,y2为区域右下角; 用wh来表示为(x1,y1,x1+w,y1+h)
         # 7张牌。
-        self.hand_region = (645, 690, 800, 735)
+        self.hand_region = win_config.get('')(645, 690, 800, 735)
         self.hand1_pos = (645, 690)
         self.hand1_suit_x_y = (676, 751)
         self.hand2_pos = (718, 690)
