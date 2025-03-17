@@ -1,29 +1,13 @@
-import json
-from typing import Any, Callable
 from poker.config import *
 
 
-def process_json_values(
-    data: Any,
-    processor: Callable[[Any], Any],
-    process_keys: bool = False
-) -> Any:
-    """
-    递归处理JSON对象的所有值
-    :param data: 原始数据（支持dict/list/基础类型）
-    :param processor: 值处理函数
-    :param process_keys: 是否处理字典键
-    :return: 处理后的新数据
-    """
-    if isinstance(data, dict):
-        return {
-            (processor(k) if process_keys else k): process_json_values(v, processor)
-            for k, v in data.items()
-        }
-    elif isinstance(data, list):
-        return [process_json_values(item, processor) for item in data]
+def process_values(data):
+    if isinstance(data, tuple):
+        return new_loc(data)
+    elif isinstance(data, dict):
+        return {k: process_values(v) for k, v in data.items()}
     else:
-        return processor(data)
+        return new_loc(data)
 
 
 def new_loc(loc):
@@ -49,10 +33,7 @@ def new_loc(loc):
 
 
 def get_ocr_config():
-    base_config = WIN_1440_900
-    processed = process_json_values(base_config, new_loc)
-    obj = json.dumps(processed, indent=2)
-    return obj
+    return process_values(WIN_1440_900)
 
 
 def match_color(color1, color2, diff=100):
@@ -75,12 +56,7 @@ def contain_color(image, color):
 def ordered_hand(hand):
     rank1 = hand[0][:-1]
     rank2 = hand[1][:-1]
-    ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
     if ranks.index(rank1) > ranks.index(rank2):
         return hand
     else:
         return [hand[1], hand[0]]
-
-
-processed = process_json_values(WIN_1440_900, new_loc)
-print(json.dumps(processed, indent=2))
