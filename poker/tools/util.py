@@ -80,3 +80,7 @@ def ordered_hand(hand):
         return hand
     else:
         return [hand[1], hand[0]]
+
+
+processed = process_json_values(WIN_1440_900, new_loc)
+print(json.dumps(processed, indent=2))
