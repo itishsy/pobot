@@ -2,8 +2,6 @@ import time
 from datetime import datetime
 
 
-from poker.strategies.default_strategy import Strategy
-
 from poker.tools.ocr import PokerOcr
 from poker.tools.rpa import PokerRpa
 from poker.models.game import Game
@@ -16,7 +14,6 @@ class GameAgent:
         self.ocr = PokerOcr()
         self.rpa = PokerRpa()
         self.game = Game()
-        self.strategy = Strategy()
         self.ai = PokerAI(drl=False)    # 开启深度机器学习
 
     def start(self):

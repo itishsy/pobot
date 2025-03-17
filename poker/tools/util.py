@@ -30,17 +30,19 @@ def new_loc(loc):
     x_fbl_rate, y_fbl_rate = CUR_FBL[0] / BASE_FBL[0], CUR_FBL[1] / BASE_FBL[1]
     x_base_offset, y_base_offset = BASE_WIN_OFFSET[0], BASE_WIN_OFFSET[1]
     x_cur_offset, y_cur_offset = CUR_WIN_OFFSET[0], CUR_WIN_OFFSET[1]
-    if len(loc) == 2:
-        x, y = loc[0], loc[1]
-        return (int((x - x_base_offset) * x_fbl_rate) + x_cur_offset,
-                int((y - y_base_offset) * y_fbl_rate) + y_cur_offset)
-    elif len(loc) == 4:
-        x1, y1, x2, y2 = loc[0], loc[1], loc[2], loc[3]
-        return (int((x1 - x_base_offset) * x_fbl_rate) + x_cur_offset,
-                int((y1 - y_base_offset) * y_fbl_rate) + y_cur_offset,
-                int((x2 - x_base_offset) * x_fbl_rate) + x_cur_offset,
-                int((y2 - y_base_offset) * y_fbl_rate) + y_cur_offset)
-    elif len(loc) == 4:
+    
+    if isinstance(loc, (list, tuple)):
+        if len(loc) == 2:
+            x, y = loc[0], loc[1]
+            return (int((x - x_base_offset) * x_fbl_rate) + x_cur_offset,
+                    int((y - y_base_offset) * y_fbl_rate) + y_cur_offset)
+        elif len(loc) == 4:
+            x1, y1, x2, y2 = loc[0], loc[1], loc[2], loc[3]
+            return (int((x1 - x_base_offset) * x_fbl_rate) + x_cur_offset,
+                    int((y1 - y_base_offset) * y_fbl_rate) + y_cur_offset,
+                    int((x2 - x_base_offset) * x_fbl_rate) + x_cur_offset,
+                    int((y2 - y_base_offset) * y_fbl_rate) + y_cur_offset)
+    elif isinstance(loc, (int, float)):
         return int((loc - x_base_offset) * x_fbl_rate) + x_cur_offset
     else:
         return loc
