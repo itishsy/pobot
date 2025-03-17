@@ -12,12 +12,14 @@
 WIN_TITLE = "192.168.0.113 - 远程桌面连接"
 # WIN_TITLE = "192.168.1.200 - 远程桌面连接"
 # 截图区域相对于左上角的偏移位
-BASE_WIN_OFFSET = (129, 58)
 BASE_FBL = (1440, 900)
+BASE_WIN_OFFSET = (129, 58)
 
 # 当前运行的桌面
-CUR_WIN_OFFSET = (129, 58)
-CUR_FBL = (1440, 900)
+# CUR_FBL = (1440, 900)
+# CUR_WIN_OFFSET = (129, 58)
+CUR_FBL = (1366, 768)
+CUR_WIN_OFFSET = (8, 31)
 
 SB = 0.01
 BB = 0.02

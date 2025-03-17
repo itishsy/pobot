@@ -20,6 +20,8 @@ def new_loc(loc):
             x, y = loc[0], loc[1]
             return (int((x - x_base_offset) * x_fbl_rate) + x_cur_offset,
                     int((y - y_base_offset) * y_fbl_rate) + y_cur_offset)
+        elif len(loc) == 3:
+            return loc
         elif len(loc) == 4:
             x1, y1, x2, y2 = loc[0], loc[1], loc[2], loc[3]
             return (int((x1 - x_base_offset) * x_fbl_rate) + x_cur_offset,
