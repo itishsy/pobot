@@ -21,6 +21,7 @@ class StrategicAnalyst:
         else:
             win_rate = self.eval_win_rate()
             raise_amt = self.state.pot * win_rate / (1 - win_rate)
+            print('win_rate:{}'.format(win_rate), 'raise_amt:{}'.format(raise_amt))
             if raise_amt >= self.state.call:
                 raise_num = int(raise_amt/self.state.call)
                 if raise_num == 0:
@@ -31,6 +32,8 @@ class StrategicAnalyst:
                 else:
                     return 'call', 0
             else:
+                if self.state.call == 0:
+                    return 'check', 0
                 return 'fold', 0
 
     def eval_win_rate(self, num_simulations=5000):

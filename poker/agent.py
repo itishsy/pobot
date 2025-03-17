@@ -2,8 +2,6 @@ import time
 from datetime import datetime
 
 
-from poker.strategies.default_strategy import Strategy
-
 from poker.tools.ocr import PokerOcr
 from poker.tools.rpa import PokerRpa
 from poker.models.game import Game
@@ -16,7 +14,6 @@ class GameAgent:
         self.ocr = PokerOcr()
         self.rpa = PokerRpa()
         self.game = Game()
-        self.strategy = Strategy()
         self.ai = PokerAI(drl=False)    # 开启深度机器学习
 
     def start(self):
@@ -30,10 +27,13 @@ class GameAgent:
                     action, raised = self.ai.eval_action(self.game)
                     self.rpa.do(action, raised=raised)
                 except:
+                    print('error')
                     image.save('image/{}.jpg'.format(datetime.now().strftime('%m%d%H%M%S')))
                     self.rpa.do('fold', raised=0)
                 time.sleep(3)
-            time.sleep(2)
+                print('sleep 3')
+            time.sleep(1)
+            print('sleep 1')
 
 
 if __name__ == '__main__':
