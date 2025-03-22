@@ -234,4 +234,4 @@ class Game(BaseModel):
 
 if __name__ == '__main__':
     db.connect()
-    db.create_tables([Game])
+    db.create_tables([Game, GameState])
