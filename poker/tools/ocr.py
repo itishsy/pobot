@@ -63,6 +63,8 @@ class PokerOcr:
         stage.position = self.__pos()
         stage.pot = self.__ocr_amt(self.ocr_config['amount']['pool'])
         stage.stack = self.__ocr_amt(self.ocr_config['amount']['balance'])
+        # print('amount call', self.__ocr_txt(self.ocr_config['amount']['call']))
+        # print('amount call', self.__ocr_amt(self.ocr_config['amount']['call']))
         stage.call = self.__ocr_amt(self.ocr_config['amount']['call'])
         stage.players = self.__players()
         return stage
@@ -79,7 +81,6 @@ class PokerOcr:
 
     def __ocr_amt(self, region):
         ocr_txt = self.__ocr_txt(region)
-        # print(ocr_txt)
         ocr_amt = self.__convert_amt(ocr_txt)
         if ocr_amt == 0.0 and ocr_txt.__contains__('s'):
             region2 = (region[0]+5, region[1], region[0]+120, region[1]+31)

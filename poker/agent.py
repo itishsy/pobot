@@ -27,7 +27,7 @@ class GameAgent:
                     action, raised = self.ai.eval_action(self.game)
                     self.rpa.do(action, raised=raised)
                     time.sleep(6 if action == 'fold' else 3)
-                    print('sleep 3')
+                    # print('sleep 3')
             except Exception as e:
                 print('[Error]', str(e))
                 # image.save('image/{}.jpg'.format(datetime.now().strftime('%m%d%H%M%S')))

@@ -111,7 +111,7 @@ class Game(BaseModel):
 
     def add_state(self, state):
         if state.hand != self.hand or state.position != self.position:
-            print('new game')
+            print('------------------ ', state.stack, ' ------------------')
             if self.hand is not None:
                 self.persist(state.stack)
                 self.states.clear()

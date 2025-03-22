@@ -54,8 +54,8 @@ class PokerRpa:
                 self.__raise()
             # act = getattr(self, '__{}'.format(action))
             # act()
-            pyautogui.moveTo(self.position_button_fold[0] + random.randint(1, 100),
-                             self.position_button_fold[1] + random.randint(100, 500) - 800,
+            pyautogui.moveTo(self.position_button_fold[0] + random.randint(-100, 100),
+                             self.position_button_fold[1] + random.randint(100, 300) - 800,
                              duration=0.8)  # duration 参数表示鼠标移动的时间
         else:
             print('undefined action:', action)
