@@ -26,14 +26,14 @@ class GameAgent:
                     print(state.to_dict())
                     action, raised = self.ai.eval_action(self.game)
                     self.rpa.do(action, raised=raised)
-                except:
-                    print('error')
+                except Exception as e:
+                    print('[Error]', str(e))
                     image.save('image/{}.jpg'.format(datetime.now().strftime('%m%d%H%M%S')))
                     self.rpa.do('fold', raised=0)
                 time.sleep(3)
-                print('sleep 3')
+                # print('sleep 3')
             time.sleep(1)
-            print('sleep 1')
+            # print('sleep 1')
 
 
 if __name__ == '__main__':

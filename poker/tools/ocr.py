@@ -79,7 +79,7 @@ class PokerOcr:
 
     def __ocr_amt(self, region):
         ocr_txt = self.__ocr_txt(region)
-        print(ocr_txt)
+        # print(ocr_txt)
         ocr_amt = self.__convert_amt(ocr_txt)
         if ocr_amt == 0.0 and ocr_txt.__contains__('s'):
             region2 = (region[0]+5, region[1], region[0]+120, region[1]+31)

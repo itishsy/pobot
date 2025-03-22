@@ -16,18 +16,18 @@ class GameState(BaseModel):
     id = AutoField()
     code = CharField()
     hand = CharField()
-    board = CharField()
-    position = IntegerField()
-    stack = FloatField()
-    pot = FloatField()
-    stage = IntegerField()
-    call = FloatField()
-    action = CharField()
-    player1 = TextField()
-    player2 = TextField()
-    player3 = TextField()
-    player4 = TextField()
-    player5 = TextField()
+    board = CharField(null=True)
+    position = IntegerField(null=True)
+    stack = FloatField(null=True)
+    pot = FloatField(null=True)
+    stage = IntegerField(null=True)
+    call = FloatField(null=True)
+    action = CharField(null=True)
+    player1 = TextField(null=True)
+    player2 = TextField(null=True)
+    player3 = TextField(null=True)
+    player4 = TextField(null=True)
+    player5 = TextField(null=True)
 
 
 class Player:
@@ -89,9 +89,9 @@ class Game(BaseModel):
     id = AutoField()
     code = CharField()
     hand = CharField()
-    position = IntegerField()
-    stack = FloatField()
-    reward = FloatField()
+    position = IntegerField(null=True)
+    stack = FloatField(null=True)
+    reward = FloatField(null=True)
 
     states = []
     # @property

@@ -40,6 +40,8 @@ class StrategicAnalyst:
         wins = 0
         total = 0
         ranges = self.__pre_flop_ranges()
+        self_hand = [Card.new(self.state.hand[0]), Card.new(self.state.hand[1])]
+        self_board = [Card.new(v) for v in self.state.board]
         for _ in range(num_simulations):
             try:
                 # 底牌范围中随机抽取一手牌
@@ -54,14 +56,14 @@ class StrategicAnalyst:
                 # 洗牌
                 deck = Deck()
                 # 从牌堆中移除已出现的牌
-                used_card = self.state.hand + opponent_hand + self.state.board
+                used_card = self_hand + opponent_hand + self_board
                 for card in used_card:
                     if deck.cards.__contains__(card):
                         deck.cards.remove(card)
 
-                board = self.state.board + deck.draw(5 - len(self.state.board))
+                board = self_board + deck.draw(5 - len(self_board))
                 # 计算牌力
-                strength1 = self.evaluator.evaluate(self.state.hand, board)
+                strength1 = self.evaluator.evaluate(self_hand, board)
                 strength2 = self.evaluator.evaluate(opponent_hand, board)
                 
                 total += 1
