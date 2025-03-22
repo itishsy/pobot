@@ -1,7 +1,7 @@
 import pyautogui
 import random
 
-from poker.tools.util import match_color, get_ocr_config
+from poker.tools.util import match_color, process_config
 
 
 class PokerRpa:
@@ -11,7 +11,7 @@ class PokerRpa:
         self.win = None
 
         self.actions = ['fold', 'call', 'check', 'bet', 'raise', 'allin']
-        ocr_config = get_ocr_config()
+        ocr_config = process_config()
 
         # 按鈕识别
         self.color_button = ocr_config['action']['color']   # (171, 67, 63)
