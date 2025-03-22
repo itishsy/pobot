@@ -22,16 +22,16 @@ class StrategicAnalyst:
         call_ev = round(self.state.pot * win_rate - (1 - win_rate) * self.state.call, 4)
         print('win_rate:{}'.format(win_rate), 'pot:{}'.format(self.state.pot), 'call_ev:{}'.format(call_ev))
         if win_rate < 0.5:
-            return 'check', 0 if self.state.call == 0 else 'fold', 0
+            return ('check', 0) if self.state.call == 0 else ('fold', 0)
         elif win_rate > 0.8:
             # raise的概率大于check。
-            return 'check', 0 if random.randint(1, 100) < (win_rate * 100) else 'raise', random.randint(1, 3)
+            return ('check', 0) if random.randint(1, 100) < (win_rate * 100) else ('raise', random.randint(1, 3))
         else:
             if self.state.call == 0:
                 # raise的概率小于check。
-                return 'check', 0 if random.randint(1, 100) > (win_rate * 100) else 'raise', random.randint(0, 3)
+                return ('check', 0) if random.randint(1, 100) > (win_rate * 100) else ('raise', random.randint(0, 3))
             else:
-                return 'call', 0 if call_ev > self.state.call * win_rate else 'fold', 0
+                return ('call', 0) if call_ev > self.state.call * win_rate else ('fold', 0)
 
     def set_hand_strength(self):
         if self.state.stage == 0:
