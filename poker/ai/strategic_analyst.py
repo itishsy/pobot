@@ -38,6 +38,7 @@ class StrategicAnalyst:
 
     def eval_win_rate(self, num_simulations=5000):
         wins = 0
+        total = 0
         ranges = self.__pre_flop_ranges()
         for _ in range(num_simulations):
             try:
@@ -62,11 +63,15 @@ class StrategicAnalyst:
                 # 计算牌力
                 strength1 = self.evaluator.evaluate(self.state.hand, board)
                 strength2 = self.evaluator.evaluate(opponent_hand, board)
-                if strength1 < strength2:
+                
+                total += 1
+                if strength1 < strength2:  # 修正：较大的值表示较弱的牌
                     wins += 1
-            except:
-                wins += random.randint(0, 1)
-        return wins / num_simulations
+            except Exception as e:
+                print('Error in win rate calculation:', str(e))
+                continue
+                
+        return wins / total if total > 0 else 0.5  # 添加安全检查
 
     def __pre_flop_action(self):
         position = self.state.position

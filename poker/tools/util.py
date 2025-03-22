@@ -5,31 +5,38 @@ def process_values(data):
     if isinstance(data, tuple):
         return new_loc(data)
     elif isinstance(data, dict):
-        return {k: process_values(v) for k, v in data.items()}
+        return {k: new_wh(v) if 'w_h' in k else process_values(v) for k, v in data.items()}
     else:
         return new_loc(data)
 
 
+def new_wh(wh):
+    w, h = wh[0], wh[1]
+    x_fbl_rate, y_fbl_rate = CUR_TABLE_PIXEL[0] / BASE_TABLE_PIXEL[0], CUR_TABLE_PIXEL[1] / BASE_TABLE_PIXEL[1]
+    return int(w * x_fbl_rate), int(h * y_fbl_rate)
+
+
 def new_loc(loc):
-    x_fbl_rate, y_fbl_rate = CUR_FBL[0] / BASE_FBL[0], CUR_FBL[1] / BASE_FBL[1]
+    # x_rate, y_rate = CUR_FBL[0] / BASE_FBL[0], CUR_FBL[1] / BASE_FBL[1]
+    x_rate, y_rate = CUR_TABLE_PIXEL[0] / BASE_TABLE_PIXEL[0], CUR_TABLE_PIXEL[1] / BASE_TABLE_PIXEL[1]
     x_base_offset, y_base_offset = BASE_WIN_OFFSET[0], BASE_WIN_OFFSET[1]
     x_cur_offset, y_cur_offset = CUR_WIN_OFFSET[0], CUR_WIN_OFFSET[1]
     
     if isinstance(loc, (list, tuple)):
         if len(loc) == 2:
             x, y = loc[0], loc[1]
-            return (int((x - x_base_offset) * x_fbl_rate) + x_cur_offset,
-                    int((y - y_base_offset) * y_fbl_rate) + y_cur_offset)
+            return (int((x - x_base_offset) * x_rate) + x_cur_offset,
+                    int((y - y_base_offset) * y_rate) + y_cur_offset)
         elif len(loc) == 3:
             return loc
         elif len(loc) == 4:
             x1, y1, x2, y2 = loc[0], loc[1], loc[2], loc[3]
-            return (int((x1 - x_base_offset) * x_fbl_rate) + x_cur_offset,
-                    int((y1 - y_base_offset) * y_fbl_rate) + y_cur_offset,
-                    int((x2 - x_base_offset) * x_fbl_rate) + x_cur_offset,
-                    int((y2 - y_base_offset) * y_fbl_rate) + y_cur_offset)
+            return (int((x1 - x_base_offset) * x_rate) + x_cur_offset,
+                    int((y1 - y_base_offset) * y_rate) + y_cur_offset,
+                    int((x2 - x_base_offset) * x_rate) + x_cur_offset,
+                    int((y2 - y_base_offset) * y_rate) + y_cur_offset)
     elif isinstance(loc, (int, float)):
-        return int((loc - x_base_offset) * x_fbl_rate) + x_cur_offset
+        return int((loc - x_base_offset) * x_rate) + x_cur_offset
     else:
         return loc
 

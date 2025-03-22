@@ -51,8 +51,8 @@ class PokerOcr:
 
         # 底池、余额、跟注金额
         self.pool_region = ocr_config['amount']['pool']   # (729, 368, 817, 398)
-        self.call_amount_region = ocr_config['amount']['balance']   # (1047, 856, 1138, 886)
-        self.balance_region = ocr_config['amount']['call']   # (658, 832, 812, 872)
+        self.balance_region = ocr_config['amount']['balance']   # (658, 832, 812, 872)
+        self.call_amount_region = ocr_config['amount']['call']   # (1047, 856, 1138, 886)
 
     def fetch_state(self, image):
         self.image = image
@@ -69,7 +69,7 @@ class PokerOcr:
 
     def __ocr_txt(self, region):
         crop_image = self.image.crop(region)
-        crop_image.save('c:\\Huangsy\\sourcecode\\pobot\\poker\\cropped_image.png')
+        crop_image.save('d:\\Huangsy\\sourcecode\\pobot\\poker\\cropped_image.png')
         image_bytes = io.BytesIO()
         crop_image.save(image_bytes, format='PNG')
         image_bytes = image_bytes.getvalue()
@@ -79,7 +79,7 @@ class PokerOcr:
 
     def __ocr_amt(self, region):
         ocr_txt = self.__ocr_txt(region)
-        # print(ocr_txt)
+        print(ocr_txt)
         ocr_amt = self.__convert_amt(ocr_txt)
         if ocr_amt == 0.0 and ocr_txt.__contains__('s'):
             region2 = (region[0]+5, region[1], region[0]+120, region[1]+31)
@@ -139,7 +139,8 @@ class PokerOcr:
                 return card_txt + 'd'
         return None
 
-    def __card(self, ocr_txt):
+    @staticmethod
+    def __card(ocr_txt):
         card_txt = None
         # print(ocr_txt)
         for c in ['A', 'K', 'k', 'Q', 'O', 'J', 'j', '10', '1o', '1O', '9', '8', '7', '6', '5', '4', '3', '2']:
@@ -268,6 +269,7 @@ if __name__ == '__main__':
         # print(i1, state.to_dict())
 
     # img1 = Image.open('../image/20250316172107.jpg')
+    # img1 = Image.open('../table_image.jpg')
     img1 = Image.open('../image.png')
     state = ocr.fetch_state(img1)
     print(state.to_dict())
