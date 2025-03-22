@@ -1,7 +1,7 @@
 import pyautogui
 import random
 
-from poker.tools.util import match_color
+from poker.tools.util import match_color, get_ocr_config
 
 
 class PokerRpa:
@@ -11,13 +11,14 @@ class PokerRpa:
         self.win = None
 
         self.actions = ['fold', 'call', 'check', 'bet', 'raise', 'allin']
+        ocr_config = get_ocr_config()
 
         # 按鈕识别
-        self.color_button = (171, 67, 63)
-        self.position_button_fold = (937, 860)
-        self.position_button_call = (1096, 860)
-        self.position_button_raise = (1252, 860)
-        self.position_button_add_amount = (1301, 787)
+        self.color_button = ocr_config['action']['color']   # (171, 67, 63)
+        self.position_button_fold = ocr_config['action']['fold']   # (937, 860)
+        self.position_button_call = ocr_config['action']['call']   # (1096, 860)
+        self.position_button_raise = ocr_config['action']['raise']   # (1252, 860)
+        self.position_button_add_amount = ocr_config['action']['add']   # (1301, 787)
 
     def __get_win(self):
         if self.win is None:
