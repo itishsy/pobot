@@ -16,72 +16,92 @@ class StrategicAnalyst:
     def get_action(self, game):
         self.game = game
         self.state = game.states[-1]
-        if self.state.stage == 0:
-            return self.__pre_flop_action()
+        self.set_hand_strength()
+        win_rate = self.eval_win_rate()
+        game.states[-1].win_rate = win_rate
+        call_ev = round(self.state.pot * win_rate - (1 - win_rate) * self.state.call, 4)
+        print('win_rate:{}'.format(win_rate), 'pot:{}'.format(self.state.pot), 'call_ev:{}'.format(call_ev))
+        if win_rate < 0.5:
+            return 'check', 0 if self.state.call == 0 else 'fold', 0
+        elif win_rate > 0.8:
+            # raise的概率大于check。
+            return 'check', 0 if random.randint(1, 100) < (win_rate * 100) else 'raise', random.randint(1, 3)
         else:
-            win_rate = self.eval_win_rate()
-            raise_amt = self.state.pot * win_rate / (1 - win_rate)
-            print('win_rate:{}'.format(win_rate), 'raise_amt:{}'.format(raise_amt))
-            if raise_amt >= self.state.call:
-                raise_num = int(raise_amt/self.state.call)
-                if raise_num == 0:
-                    return 'call', 0
-                # 随机选择raise或check。
-                if random.randint(1, 100) > (win_rate * 100):
-                    return 'raise', random.randint(1, raise_num)
-                else:
-                    return 'call', 0
+            if self.state.call == 0:
+                # raise的概率小于check。
+                return 'check', 0 if random.randint(1, 100) > (win_rate * 100) else 'raise', random.randint(0, 3)
             else:
-                if self.state.call == 0:
-                    return 'check', 0
-                return 'fold', 0
+                return 'call', 0 if call_ev > self.state.call * win_rate else 'fold', 0
 
-    def eval_win_rate(self, num_simulations=5000):
-        wins = 0
-        total = 0
-        ranges = self.__pre_flop_ranges()
-        self_hand = [Card.new(self.state.hand[0]), Card.new(self.state.hand[1])]
-        self_board = [Card.new(v) for v in self.state.board]
-        for _ in range(num_simulations):
-            try:
-                # 底牌范围中随机抽取一手牌
-                opponent_cards = ranges[np.random.randint(0, len(ranges))]
-                opponent_hand = [Card.new(opponent_cards[0:2]), Card.new(opponent_cards[2:4])]
-
-                # 跳过重叠的牌
-                if (opponent_hand[0] == self.state.hand[0] or opponent_hand[0] == self.state.hand[1] or
-                        opponent_hand[1] == self.state.hand[0] or opponent_hand[1] == self.state.hand[1]):
+    def set_hand_strength(self):
+        if self.state.stage == 0:
+            self.state.strength = HandScore.get_score(self.state.hand[0], self.state.hand[1])
+            self.__pre_flop_ranges()
+        else:
+            wins = 0
+            total = 0
+            self_hand = [Card.new(self.state.hand[0]), Card.new(self.state.hand[1])]
+            self_board = [Card.new(v) for v in self.state.board]
+            opponent_ranges = self.game.opponent_pre_flop_ranges
+            for _ in range(5000):
+                try:
+                    # 底牌范围中随机抽取一手牌
+                    opponent_cards = opponent_ranges[np.random.randint(0, len(opponent_ranges))]
+                    opponent_hand = [Card.new(opponent_cards[0:2]), Card.new(opponent_cards[2:4])]
+                    # 跳过重叠的牌
+                    if opponent_hand[0] in self_hand or opponent_hand[1] in self_hand[1]:
+                        continue
+                    # 洗牌
+                    deck = Deck()
+                    # 从牌堆中移除已出现的牌
+                    used_card = self_hand + opponent_hand + self_board
+                    for card in used_card:
+                        if deck.cards.__contains__(card):
+                            deck.cards.remove(card)
+                    board = self_board + deck.draw(5 - len(self_board))
+                    # print(board)
+                    # 计算牌力
+                    strength1 = self.evaluator.evaluate(self_hand, board)
+                    strength2 = self.evaluator.evaluate(opponent_hand, board)
+                    total += 1
+                    if strength1 < strength2:  # 修正：较大的值表示较弱的牌
+                        wins += 1
+                except Exception as e:
+                    print('Error in win rate calculation:', str(e))
                     continue
+            self.state.strength = round(wins / total, 4)
 
-                # 洗牌
-                deck = Deck()
-                # 从牌堆中移除已出现的牌
-                used_card = self_hand + opponent_hand + self_board
-                for card in used_card:
-                    if deck.cards.__contains__(card):
-                        deck.cards.remove(card)
-
-                board = self_board + deck.draw(5 - len(self_board))
-                # 计算牌力
-                strength1 = self.evaluator.evaluate(self_hand, board)
-                strength2 = self.evaluator.evaluate(opponent_hand, board)
-                
-                total += 1
-                if strength1 < strength2:  # 修正：较大的值表示较弱的牌
-                    wins += 1
-            except Exception as e:
-                print('Error in win rate calculation:', str(e))
-                continue
-                
-        return wins / total if total > 0 else 0.5  # 添加安全检查
+    def eval_win_rate(self):
+        """根據手牌強度，計算獲勝概率
+        #  贏率降低的條件有：入池人數越多、牌面越濕、玩家存在c-bet，check-raise等行為
+        """
+        strength = self.state.strength
+        if strength > 0.8:
+            return strength
+        reduce_rate = 1
+        active_size = 0
+        raise_size = 0
+        for player in self.state.players:
+            if player.active == 1:
+                active_size += 1
+                if player.action == 'raise':
+                    raise_size += 1
+        if active_size > 2:
+            reduce_rate = reduce_rate * 0.9
+        if raise_size > 1:
+            reduce_rate = reduce_rate * 0.9
+        if self.state.stage == 0:
+            reduce_rate = reduce_rate * (1 - self.state.pot/15 * BB)
+        return round(strength * reduce_rate, 4)
 
     def __pre_flop_action(self):
         position = self.state.position
         pot = self.state.pot
         call = self.state.call
         score = HandScore.get_score(self.state.hand[0], self.state.hand[1])
+        self.state.win_rate = score
         call_ev = round(pot * score - (1 - score) * call, 4)
-        print('hand score:{}'.format(score), 'pot:{}'.format(pot), 'call_ev:{}'.format(call_ev))
+        print('win_rate:{}'.format(score), 'pot:{}'.format(pot), 'call_ev:{}'.format(call_ev))
         if score >= 0.8:
             # 超强牌，造大底池ii
             if pot < 4 * BB:
@@ -96,7 +116,7 @@ class StrategicAnalyst:
             # 中强牌，控制底池，避免参与过大的底池
             if call < 2 * BB:
                 return 'raise', random.randint(1, 2)
-            if 2 * BB <= call <= 10 * BB or call_ev > 0:
+            if 2 * BB <= call <= 10 * BB and call_ev > 0:
                 return 'call', 0
             if call_ev == 0 and position == 6 and random.randint(1, 3) == 1:
                 return 'raise', random.randint(1, 2)
@@ -115,7 +135,8 @@ class StrategicAnalyst:
 
     def __pre_flop_ranges(self):
         """
-        手牌范围。评估翻牌前的手牌范围。跟底池大小、玩家行为有关。
+        翻牌前手牌范围评估。
+        翻牌前的手牌范围。跟底池大小、玩家行为有关。
         player_pre_act = 'raise、call、3bet、check'  # 翻牌前行动。加注通常表示较强的手牌，而跟注可能意味着中等或投机性手牌。
         player_flop_act = '持续bet、check-raise'  # 翻牌后行动。
         player_balance = 100  # 筹码量。 短筹码玩家倾向于玩得更紧，而深筹码玩家可能更激进，尝试利用筹码优势进行诈唬或价值下注。
@@ -124,16 +145,35 @@ class StrategicAnalyst:
         board_style = '单张成顺、单张成花、卡顺、三张花、'  # 牌面结构。 湿润牌面下注，对手可能有更多听牌或成牌
         :return:
         """
-        pot_bb = 2
+        if self.game.opponent_pre_flop_ranges:
+            return
+        state0 = None
         for i in range(len(self.game.states)):
             if self.game.states[i].stage == 0:
-                pot_bb = int(self.game.states[i].pot / BB)
-        if 1 < pot_bb <= 3:
-            return HandScore.get_ranges(0.2, 0.6)
-        elif 3 < pot_bb <= 10:
-            return HandScore.get_ranges(0.4, 0.9)
-        elif 10 < pot_bb <= 50:
-            return HandScore.get_ranges(0.5, 0.9)
+                state0 = self.game.states[i]
+        pot_bb = int(state0.pot / BB)
+        active_size = 0
+        raise_size = 0
+        for player in state0.players:
+            if player.active == 1:
+                active_size += 1
+                if player.action == 'raise':
+                    raise_size += 1
+        if pot_bb > 50:
+            if active_size > 1:
+                min_score, max_score = 0.6, 0.9
+            else:
+                min_score, max_score = 0.65, 0.9
+        elif 20 < pot_bb <= 50:
+            min_score, max_score = 0.5, 0.9
+        elif 10 < pot_bb <= 20:
+            if active_size > 1:
+                min_score, max_score = 0.4, 0.7
+            else:
+                min_score, max_score = 0.4, 0.8
         else:
-            return HandScore.get_ranges(0.55, 0.9)
-
+            if active_size > 1:
+                min_score, max_score = 0.4, 0.7
+            else:
+                min_score, max_score = 0.2, 0.9
+        self.game.opponent_pre_flop_ranges = HandScore.get_ranges(min_score, max_score)

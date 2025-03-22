@@ -21,15 +21,16 @@ class PokerAI:
             # 获取AI决策
             action, predicted_value = self.learner.get_action(game_state)
             # 资金管理调整下注量
+            bet_size = 0
             if action == 2:  # raise
                 bet_size = self.bankroll.get_bet_size(
                     self.learner.policy_net(torch.FloatTensor(processed_state))[0].detach().numpy(),
                     game_state.pot)
-                return 'raise', bet_size
-            else:
-                return action, 0
+                action = 'raise'
         else:
-            return self.analyst.get_action(game)
+            action, bet_size = self.analyst.get_action(game)
+        game.states[-1].action = '{},{}'.format(action, bet_size)
+        return action, bet_size
 
     def start_learn(self, final_reward):
         episode_data = []

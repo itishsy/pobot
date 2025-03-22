@@ -16,13 +16,15 @@ class GameState(BaseModel):
     id = AutoField()
     code = CharField()
     hand = CharField()
-    board = CharField(null=True)
     position = IntegerField(null=True)
+    stage = IntegerField(null=True)
     stack = FloatField(null=True)
     pot = FloatField(null=True)
-    stage = IntegerField(null=True)
+    board = CharField(null=True)
     call = FloatField(null=True)
     action = CharField(null=True)
+    strength = CharField(null=True)
+    win_rate = FloatField(null=True)
     player1 = TextField(null=True)
     player2 = TextField(null=True)
     player3 = TextField(null=True)
@@ -65,6 +67,8 @@ class State:
     call = None
     action = None
     reward = None
+    strength = None
+    win_rate = None
     players = []
 
     def to_dict(self):
@@ -94,6 +98,7 @@ class Game(BaseModel):
     reward = FloatField(null=True)
 
     states = []
+    opponent_pre_flop_ranges = []
     # @property
     # def states(self):
     #     """反序列化存储的JSON数据为State对象集合"""
@@ -110,6 +115,7 @@ class Game(BaseModel):
             if self.hand is not None:
                 self.persist(state.stack)
                 self.states.clear()
+                self.opponent_pre_flop_ranges.clear()
             self.code = datetime.now().strftime('%Y%m%d%H%M%S')
             self.hand = state.hand
             self.position = state.position
@@ -132,7 +138,6 @@ class Game(BaseModel):
             self.set_players_state(state)
             self.states.append(state)
         # print('states1:{}'.format(sle), 'states2:{}'.format(len(self.states)))
-
 
     def set_players_state(self, new_state):
         pre_state = self.states[-1]
@@ -204,6 +209,8 @@ class Game(BaseModel):
                 stack=state.stack,
                 pot=state.pot,
                 stage=state.stage,
+                strength=state.strength,
+                win_rate=state.win_rate,
                 call=state.call,
                 action=state.action,
                 player1=json.dumps(state.players[0].to_dict()),
@@ -214,7 +221,6 @@ class Game(BaseModel):
             )
             game_state.save()
         # self.state_data = json.dumps([obj.to_dict() for obj in self.states] if self.states else [])
-        
 
     def to_dict(self):
         # states = []
