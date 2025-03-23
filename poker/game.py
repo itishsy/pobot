@@ -4,7 +4,7 @@ from datetime import datetime
 from poker.player import Player, PlayerAction
 from poker.config import SB, BB
 from decimal import Decimal
-from poker.models.hand_score import HandScore
+from poker.models.card import HandScore
 
 
 # 牌局信息。每发一次牌为新的牌局

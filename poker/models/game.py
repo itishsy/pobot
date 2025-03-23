@@ -5,7 +5,7 @@ import json
 import copy
 from poker.config import SB, BB
 from decimal import Decimal
-from poker.models.hand_score import HandScore
+from poker.models.card import HandScore
 from poker.card import order_cards
 
 

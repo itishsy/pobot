@@ -1,5 +1,5 @@
 from poker.models.game import Game
-from poker.models.hand_score import HandScore
+from poker.models.card import HandScore
 import random
 
 

@@ -5,7 +5,7 @@ from poker.config import BB
 from decimal import Decimal
 from itertools import combinations
 import random
-from poker.models.hand_score import HandScore
+from poker.models.card import HandScore
 
 
 def fetch_by_level(cd, le):
