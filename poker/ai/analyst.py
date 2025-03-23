@@ -36,7 +36,7 @@ class StrategicAnalyst:
             'call': ev_matrix['call'],
             'raise': ev_matrix['raise']['ev']
         }
-        print(final_ev)
+        print(win_rate, final_ev)
         # 特殊情况处理
         if self.state.call == 0:
             final_ev['check'] = ev_matrix['call']
@@ -277,8 +277,12 @@ class StrategicAnalyst:
                     raise_times += 1
 
         # 对手倾向调整
-        if raise_times > 2:
-            base_prob = base_prob * 1.2
-        if raise_times < 2:
-            base_prob = base_prob * 0.9
-        return float(np.clip(base_prob, 0.1, 0.8))
+        # if raise_times > 2:
+        #     base_prob = base_prob * 0.9
+        # if raise_times < 2:
+        #     base_prob = base_prob * 1.1
+        if len(active_players) > 1 or raise_times > 1:
+            return 0.1
+        else:
+            return 0.2
+        # return float(np.clip(base_prob, 0.1, 0.8))

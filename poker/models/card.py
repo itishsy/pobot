@@ -35,7 +35,7 @@ def eval_strength(hand, board=None, opp_ranges=None, trials=5000):
     self_board = [] if board is None else [Card.new(v) if isinstance(v, str) else v for v in board]
     hand = [Card.new(v) if isinstance(v, str) else v for v in hand]
     used_cards = hand + self_board
-    opp_ranges = [[Card.new(v) for v in vs] for vs in opp_ranges] if opp_ranges else []
+    opp_ranges = [[Card.new(v[0:2]), Card.new(v[2:4])] for v in opp_ranges] if opp_ranges is not None else []
     opp_hands = []
     for r in opp_ranges:
         if r[0] not in used_cards and r[1] not in used_cards:
@@ -51,7 +51,13 @@ def eval_strength(hand, board=None, opp_ranges=None, trials=5000):
             deck.cards.remove(card)
 
         # 底牌范围中随机抽取一手牌
-        opp_hand = opp_hands[np.random.randint(0, len(opp_hands))] if len(opp_hands)>0 else deck.draw(2)
+        if len(opp_hands) > 0:
+            opp_hand = opp_hands[np.random.randint(0, len(opp_hands))]
+            deck.cards.remove(opp_hand[0])
+            deck.cards.remove(opp_hand[1])
+        else:
+            opp_hand = deck.draw(2)
+
         board = self_board + deck.draw(5 - len(self_board))
 
         # 计算牌力
@@ -70,7 +76,7 @@ def basic_strength(hand, board):
     self_board = [] if board is None else [Card.new(v) if isinstance(v, str) else v for v in board]
     hand = [Card.new(v) if isinstance(v, str) else v for v in hand]
     if len(self_board) > 0:
-        strength = evaluator.evaluate(hand, board)
+        strength = evaluator.evaluate(hand, self_board)
         return round((1 - strength / 7462),4)
     else:
         hand_str = ''.join([Card.int_to_str(card) for card in hand])
@@ -80,13 +86,16 @@ def basic_strength(hand, board):
 
 def wet_board(board):
     """评估牌面湿润程度（0-1范围）"""
+
+    self_board = [] if board is None else [Card.new(v) if isinstance(v, str) else v for v in board]
+
     # 湿润度影响因素
     wetness = 0.0
     suits = defaultdict(int)
     ranks = []
 
     # 统计花色和点数
-    for card in board:
+    for card in self_board:
         suits[Card.get_suit_int(card)] += 1
         ranks.append(Card.get_rank_int(card))
 
