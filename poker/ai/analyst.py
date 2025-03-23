@@ -24,18 +24,17 @@ class StrategicAnalyst:
             print('strength:{}'.format(self.state.strength), 'win_rate:{}'.format(win_rate), 'call_ev:{}'.format(call_ev))
             if call_ev < 0 or win_rate < 0.33:
                 return 'fold', 0
-            elif 0 <= call_ev < self.state.call*win_rate:
-                return ('call', 0) if random.randint(1, 100) > (win_rate * 100) else ('raise', random.randint(1, 2))
-            elif win_rate > 0.7:
-                return ('call', 0) if random.randint(1, 100) > (win_rate * 100) else ('raise', random.randint(1, 3))
-            else:
-                return ('call', 0) if random.randint(1, 100) < (win_rate * 100) else ('raise', random.randint(0, 1))
+            elif call_ev > 0:
+                if win_rate > 0.7:
+                    return ('call', 0) if random.randint(1, 100) > (win_rate * 100) else ('raise', random.randint(1, 3))
+                else:
+                    return ('call', 0) if random.randint(1, 100) < (win_rate * 100) else ('raise', random.randint(0, 1))
         else:
             print('strength:{}'.format(self.state.strength), 'win_rate:{}'.format(win_rate), 'pot:{}'.format(self.state.pot))
             if win_rate < 0.45:
                 return 'check', 0
             elif win_rate > 0.7:
-                return ('check', 0) if random.randint(1, 100) > (win_rate * 100) else ('raise', random.randint(1, 3))
+                return ('check', 0) if random.randint(1, 100) > (win_rate * 100) else ('raise', random.randint(1, 5))
             else:
                 return ('check', 0) if random.randint(50, 100) > (win_rate * 100) else ('raise', random.randint(1, 3))
 
