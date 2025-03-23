@@ -33,9 +33,10 @@ class StrategicAnalyst:
         # 最终EV计算
         final_ev = {
             'fold': ev_matrix['fold'],
-            'call': ev_matrix['call'] * bankroll_factor,
-            'raise': ev_matrix['raise']['ev'] * bankroll_factor
+            'call': ev_matrix['call'],
+            'raise': ev_matrix['raise']['ev']
         }
+        print(final_ev)
         # 特殊情况处理
         if self.state.call == 0:
             final_ev['check'] = ev_matrix['call']
@@ -44,7 +45,10 @@ class StrategicAnalyst:
         # 选择最优动作
         best_action = max(final_ev, key=final_ev.get)
 
-        return best_action, final_ev[best_action]
+        if best_action == 'raise':
+            raise_size = int(final_ev[best_action] / BB)
+            return best_action, random.randint(0, raise_size)
+        return best_action, 0
 
         # if self.state.call > 0:
         #     call_ev = round(self.state.pot * win_rate - (1 - win_rate) * self.state.call, 4)
@@ -199,21 +203,21 @@ class StrategicAnalyst:
             players += 1 if p.active == 1 else 0
 
         # 基本赔率计算
-        pot_odds = to_call / pot + to_call
-        implied_odds = 1.5  # 隐含赔率估计值
+        # pot_odds = to_call / pot + to_call
+        # implied_odds = 1.5  # 隐含赔率估计值
 
         # 核心决策因子
-        decision_factor = (
+        decision_factor = round(
                 equity * self.position_weights[self.state.position] *
                 self.stage_factors[self.state.stage] *
-                (1 + 0.1 * (players - 2))
+                (1 + 0.1 * (players - 2)), 4
         )
 
         # Fold EV（固定为0）
         ev_matrix['fold'] = 0
 
         # Check/Call EV
-        ev_matrix['call'] = (equity * pot - (1 - equity) * to_call) * decision_factor
+        ev_matrix['call'] = round((equity * pot - (1 - equity) * to_call) * decision_factor, 4)
 
         # Raise EV（动态计算最佳加注量）
         raise_ranges = self._get_raise_ranges()
@@ -223,9 +227,9 @@ class StrategicAnalyst:
             raise_amount = pot * ratio
             fold_prob = self._estimate_fold_prob(raise_amount)
 
-            ev = (fold_prob * pot +
-                  (1 - fold_prob) * (equity * pot + raise_amount) -
-                  (1 - equity) * (to_call + raise_amount))
+            ev = round((fold_prob * pot +
+                        (1 - fold_prob) * (equity * pot + raise_amount) -
+                        (1 - equity) * (to_call + raise_amount)), 4)
 
             if ev > best_raise['ev']:
                 best_raise = {'amount': raise_amount, 'ev': ev}
@@ -254,9 +258,9 @@ class StrategicAnalyst:
         # 根据对手倾向调整
         # if params['vpip'] > 0.35:
         if raise_times > 3:
-            base_ranges = [r * 0.8 for r in base_ranges]
+            base_ranges = [round(r * 0.8, 2) for r in base_ranges]
         if raise_times < 2:
-            base_ranges = [r * 1.2 for r in base_ranges]
+            base_ranges = [round(r * 1.2, 2) for r in base_ranges]
         return base_ranges
 
     def _estimate_fold_prob(self, raise_amount):
@@ -277,4 +281,4 @@ class StrategicAnalyst:
             base_prob = base_prob * 1.2
         if raise_times < 2:
             base_prob = base_prob * 0.9
-        return np.clip(base_prob, 0.1, 0.8)
+        return float(np.clip(base_prob, 0.1, 0.8))

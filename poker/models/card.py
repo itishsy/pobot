@@ -32,8 +32,8 @@ class HandScore(BaseModel):
 
 def eval_strength(hand, board=None, opp_ranges=None, trials=5000):
     evaluator = Evaluator()
-    self_board = [] if board is None else [Card.new(v) for v in board] if isinstance(board[0], str) else board
-    hand = [Card.new(v) for v in hand] if isinstance(hand[0], str) else hand
+    self_board = [] if board is None else [Card.new(v) if isinstance(v, str) else v for v in board]
+    hand = [Card.new(v) if isinstance(v, str) else v for v in hand]
     used_cards = hand + self_board
     opp_ranges = [[Card.new(v) for v in vs] for vs in opp_ranges] if opp_ranges else []
     opp_hands = []
@@ -67,8 +67,8 @@ def eval_strength(hand, board=None, opp_ranges=None, trials=5000):
 
 def basic_strength(hand, board):
     evaluator = Evaluator()
-    self_board = [] if board is None else [Card.new(v) for v in board] if isinstance(board[0], str) else board
-    hand = [Card.new(v) for v in hand] if isinstance(hand[0], str) else hand
+    self_board = [] if board is None else [Card.new(v) if isinstance(v, str) else v for v in board]
+    hand = [Card.new(v) if isinstance(v, str) else v for v in hand]
     if len(self_board) > 0:
         strength = evaluator.evaluate(hand, board)
         return round((1 - strength / 7462),4)
