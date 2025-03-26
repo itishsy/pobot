@@ -36,19 +36,21 @@ class StrategicAnalyst:
             'call': ev_matrix['call'],
             'raise': ev_matrix['raise']['ev']
         }
-        print(win_rate, final_ev)
+        print(self.state.strength, win_rate, final_ev)
         # 特殊情况处理
         if self.state.call == 0:
             final_ev['check'] = ev_matrix['call']
-            del final_ev['call']
+            # del final_ev['call']
 
         # 选择最优动作
         best_action = max(final_ev, key=final_ev.get)
 
-        if best_action == 'raise':
+        if best_action == 'raise' and win_rate > 0.60 and random.randint(1, 100) > (win_rate * 100):
             raise_size = int(final_ev[best_action] / BB)
-            return best_action, random.randint(0, raise_size)
-        return best_action, 0
+            return 'raise', random.randint(0, min(raise_size, 5))
+        elif final_ev['call'] > 0 and win_rate > 0.5:
+            return 'call', 0
+        return 'fold' if self.state.call > 0 else 'check', 0
 
         # if self.state.call > 0:
         #     call_ev = round(self.state.pot * win_rate - (1 - win_rate) * self.state.call, 4)
@@ -89,22 +91,24 @@ class StrategicAnalyst:
         #  贏率降低的條件有：入池人數越多、牌面越濕、玩家存在c-bet，check-raise等行為
         """
         strength = self.state.strength
-        if strength > 0.8:
+        if strength > 0.75:
             return strength
         reduce_rate = 1
-        active_size = 0
-        raise_size = 0
-        for player in self.state.players:
-            if player.active == 1:
-                active_size += 1
-                if player.action == 'raise':
-                    raise_size += 1
-        if active_size > 2:
-            reduce_rate = reduce_rate * 0.9
-        if raise_size > 1:
-            reduce_rate = reduce_rate * 0.9
+
         if self.state.stage == 0:
-            reduce_rate = reduce_rate * (1 - self.state.pot/(15 * BB))
+            reduce_rate = 0.9 if self.state.pot > (20 * BB) else 1
+        else:
+            active_size = 0
+            raise_size = 0
+            for player in self.state.players:
+                if player.active == 1:
+                    active_size += 1
+                    if player.action == 'raise':
+                        raise_size += 1
+            if active_size > 2:
+                reduce_rate = reduce_rate * 0.9
+            if raise_size > 1:
+                reduce_rate = reduce_rate * 0.9
         return round(strength * reduce_rate, 4)
 
     # def __pre_flop_action(self):

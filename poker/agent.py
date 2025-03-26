@@ -18,20 +18,21 @@ class GameAgent:
 
     def start(self):
         while True:
-            # try:
+            try:
                 image = self.rpa.shot()
                 if image:
                     state = self.ocr.fetch_state(image)
                     self.game.add_state(state)
                     print(state.to_dict())
                     action, raised = self.ai.eval_action(self.game)
-                    self.rpa.do(action, raised=raised)
+                    if state.stack > 0:
+                        self.rpa.do(action, raised=raised)
                     time.sleep(6 if action == 'fold' else 3)
                     # print('sleep 3')
-            # except Exception as e:
-            #     print('[Error]', str(e))
-                # image.save('image/{}.jpg'.format(datetime.now().strftime('%m%d%H%M%S')))
-                # self.rpa.do('fold', raised=0)
+            except Exception as e:
+                print('[Error]', str(e))
+                self.rpa.shot().save('image/{}.jpg'.format(datetime.now().strftime('%m%d%H%M%S')))
+                self.rpa.do('fold', raised=0)
             # time.sleep(2)
             # print('sleep 2')
 

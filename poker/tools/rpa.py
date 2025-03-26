@@ -9,6 +9,7 @@ class PokerRpa:
     def __init__(self):
         self.win_title = "192.168.0.113 - 远程桌面连接"
         self.win = None
+        self.image = None
 
         self.actions = ['fold', 'call', 'check', 'bet', 'raise', 'allin']
         ocr_config = process_config()
@@ -36,6 +37,7 @@ class PokerRpa:
             # print(button_color, self.color_button)
             if match_color(button_color, self.color_button, diff=100):
                 # print('return image')
+                self.image = image
                 return image
         # print('none image')
         return None
@@ -79,7 +81,13 @@ class PokerRpa:
         pyautogui.click()
 
     def __raise(self):
-        pyautogui.moveTo(self.position_button_raise[0] + random.randint(1, 10),
-                         self.position_button_raise[1] + random.randint(1, 5),
-                         duration=0.2)  # duration 参数表示鼠标移动的时间，这里设置为 1 秒
+        button_color = self.image.getpixel(self.position_button_raise)
+        if match_color(button_color, self.color_button, diff=100):
+            pyautogui.moveTo(self.position_button_raise[0] + random.randint(1, 10),
+                             self.position_button_raise[1] + random.randint(1, 5),
+                             duration=0.2)  # duration 参数表示鼠标移动的时间，这里设置为 1 秒
+        else:
+            pyautogui.moveTo(self.position_button_call[0] + random.randint(1, 10),
+                             self.position_button_call[1] + random.randint(1, 5),
+                             duration=0.2)  # duration 参数表示鼠标移动的时间，这里设置为 1 秒
         pyautogui.click()
