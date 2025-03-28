@@ -30,6 +30,7 @@ class HandScore(BaseModel):
             ranges.append(hs.hand)
         return ranges
 
+
 class BoardType(Enum):
     straight_flush_five = 1001
     straight_flush_four = 1002 
