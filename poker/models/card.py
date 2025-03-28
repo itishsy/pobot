@@ -6,6 +6,7 @@ import random
 import numpy as np
 from poker.config import BB
 from collections import defaultdict
+from enum import Enum
 
 
 class HandScore(BaseModel):
@@ -29,6 +30,18 @@ class HandScore(BaseModel):
             ranges.append(hs.hand)
         return ranges
 
+class BoardType(Enum):
+    straight_flush_five = 1001
+    straight_flush_four = 1002 
+    straight_flush_three = 1003
+    flush_four = 2001       # 四张同色
+    flush_three = 2002       # 三张同色
+    straight_middle = 3001    # 卡顺
+    straight_both = 3002    # 两头顺
+    two_pair = 4001    # 两公对
+    pair = 5001    # 一公对
+    high = 9001    # 高张
+    
 
 def eval_strength(hand, board=None, opp_ranges=None, trials=5000):
     evaluator = Evaluator()
