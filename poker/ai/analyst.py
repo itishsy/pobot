@@ -115,6 +115,7 @@ class StrategicAnalyst:
         position = self.state.position
         pot = self.state.pot
         call = self.state.call
+        win_rate = self.state.win_rate
         
     #     if score >= 0.8:
     #         # 超强牌，造大底池ii
