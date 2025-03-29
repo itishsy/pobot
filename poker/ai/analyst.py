@@ -24,10 +24,9 @@ class StrategicAnalyst:
     def get_action(self, game):
         self.game = game
         self.state = game.states[-1]
-        self.set_hand_strength()
-        win_rate = self.eval_win_rate()
-        game.states[-1].win_rate = win_rate
-        ev_matrix = self.calculate_ev()
+        self.__hand_strength()
+        self.__win_rate()
+        self.__calculate_ev()
         # 风险调整系数
         bankroll_factor = min(self.state.stack / 100*BB, 1.5)
         # 最终EV计算
@@ -71,7 +70,7 @@ class StrategicAnalyst:
         #     else:
         #         return ('check', 0) if random.randint(50, 100) > (win_rate * 100) else ('raise', random.randint(1, 3))
 
-    def set_hand_strength(self):
+    def __hand_strength(self):
         if self.state.stage == 0:
             self.__pre_flop_ranges()
             self.state.strength = HandScore.get_score(self.state.hand[0], self.state.hand[1])
@@ -86,7 +85,7 @@ class StrategicAnalyst:
                     0.3 * potential  # 发展潜力
             )
 
-    def eval_win_rate(self):
+    def __win_rate(self):
         """根據手牌強度，計算獲勝概率
         #  贏率降低的條件有：入池人數越多、牌面越濕、玩家存在c-bet，check-raise等行為
         """
@@ -96,6 +95,7 @@ class StrategicAnalyst:
         reduce_rate = 1
 
         if self.state.stage == 0:
+            # pre-flop阶段，降低赢率的因素有入池人数与底池大小
             reduce_rate = 0.9 if self.state.pot > (20 * BB) else 1
         else:
             active_size = 0
@@ -109,16 +109,13 @@ class StrategicAnalyst:
                 reduce_rate = reduce_rate * 0.9
             if raise_size > 1:
                 reduce_rate = reduce_rate * 0.9
-        return round(strength * reduce_rate, 4)
+        self.state.win_rate = round(strength * reduce_rate, 4)
 
-    # def __pre_flop_action(self):
-    #     position = self.state.position
-    #     pot = self.state.pot
-    #     call = self.state.call
-    #     score = HandScore.get_score(self.state.hand[0], self.state.hand[1])
-    #     self.state.win_rate = score
-    #     call_ev = round(pot * score - (1 - score) * call, 4)
-    #     print('win_rate:{}'.format(score), 'pot:{}'.format(pot), 'call_ev:{}'.format(call_ev))
+    def __pre_flop_action(self):
+        position = self.state.position
+        pot = self.state.pot
+        call = self.state.call
+        
     #     if score >= 0.8:
     #         # 超强牌，造大底池ii
     #         if pot < 4 * BB:
@@ -195,7 +192,7 @@ class StrategicAnalyst:
                 min_score, max_score = 0.2, 0.9
         self.game.opponent_pre_flop_ranges = HandScore.get_ranges(min_score, max_score)
 
-    def calculate_ev(self):
+    def _calculate_ev(self):
         """计算各动作的期望值"""
         ev_matrix = {}
 
@@ -218,10 +215,10 @@ class StrategicAnalyst:
         )
 
         # Fold EV（固定为0）
-        ev_matrix['fold'] = 0
+        self.state.fold_ev = 0
 
         # Check/Call EV
-        ev_matrix['call'] = round((equity * pot - (1 - equity) * to_call) * decision_factor, 4)
+        self.state.call_ev = round((equity * pot - (1 - equity) * to_call) * decision_factor, 4)
 
         # Raise EV（动态计算最佳加注量）
         raise_ranges = self._get_raise_ranges()
@@ -238,9 +235,8 @@ class StrategicAnalyst:
             if ev > best_raise['ev']:
                 best_raise = {'amount': raise_amount, 'ev': ev}
 
-        ev_matrix['raise'] = best_raise
+        self.state.raise_ev = best_raise
 
-        return ev_matrix
 
     def _get_raise_ranges(self):
         """动态生成加注范围"""
