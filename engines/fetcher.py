@@ -1,5 +1,6 @@
 from engines.engine import job_engine, Fetcher
 from models.symbol import Symbol
+from models.zhangting import ZhangTing
 from datetime import datetime
 from candles.finance import clean_data, fetch_and_save
 import efinance as ef
@@ -99,140 +100,215 @@ class Symbols(Fetcher):
                 symbol.save()
 
 
+class ChromeDriver:
+
+    def __init__(self):
+        print("=====chrome driver start=====")
+        options = webdriver.ChromeOptions()
+        options.binary_location = r"D:\Huangsy\chrome\chrome\chrome.exe"
+        options.add_argument("--start-maximized")
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        service = Service('D:\\Huangsy\\chrome\\chromedriver\\chromedriver.exe')
+        self.driver = webdriver.Chrome(service=service, options=options)
+
+    def access(self, url, wait=2):
+        self.driver.get(url)
+        time.sleep(wait)
+
+    def element(self, xpath, timeout=20, parent=None):
+        try:
+            if parent is not None:
+                xpath = self._xpath(parent) + xpath[1:] if xpath.startswith('.') else xpath
+
+            el = WebDriverWait(self.driver, timeout).until(expected_conditions.presence_of_element_located(
+                (By.XPATH, xpath)))
+            return el
+        except Exception as e:
+            print('[Error]', str(e))
+            return None
+
+    def _xpath(self, element):
+        return self.driver.execute_script("""
+            function generateXPath(elt) {
+                let path = '';
+                for (; elt && elt.nodeType === 1; elt = elt.parentNode) {
+                    let idx = 1;
+                    let sib = elt.previousSibling;
+                    while (sib) {
+                        if (sib.nodeType === 1 && sib.tagName === elt.tagName) idx++;
+                        sib = sib.previousSibling;
+                    }
+                    path = '/' + elt.tagName.toLowerCase() + (idx > 1 ? `[${idx}]` : '') + path;
+                }
+                return path;
+            }
+            return generateXPath(arguments[0]);
+        """, element)
+
+    def text(self, xpath, timeout=20, wait=1, parent=None):
+        el = self.element(xpath, timeout, parent=parent)
+        if el is not None:
+            time.sleep(wait)
+            return el.text
+
+    def click(self, xpath, timeout=20, wait=1, parent=None):
+        el = self.element(xpath, timeout, parent=parent)
+        if el is not None:
+            time.sleep(wait)
+            el.click()
+
+    def input(self, xpath, value, timeout=20, wait=1, parent=None):
+        el = self.element(xpath, timeout, parent=parent)
+        if el is not None:
+            time.sleep(wait)
+            el.clear()
+            el.send_keys(value)
+
+    def is_present(self, xpath, parent=None):
+        if parent is not None:
+            xpath = self._xpath(parent) + xpath[1:] if xpath.startswith('.') else xpath
+        ele = self.element(xpath, timeout=1)
+        return ele is not None
+
+    def quit(self):
+        print("=====chrome driver quit=====")
+        self.driver.quit()
+
+
 @job_engine
 class DailyReview(Fetcher):
     def fetch(self):
-        print("=====start driver=====")
-        service = Service('C:\\Program Files\\WebDriver\\msedgedriver.exe')
-        driver = webdriver.Edge(service=service)
-        # driver = webdriver.Chrome()
+        chrome = ChromeDriver()
+        try:
+            review = Review()
+            pan_data = ''
+            chrome.access('https://www.cls.cn/finance')
 
-        review = Review()
-        pan_data = ''
-        # 成交量
-        driver.get('https://www.cls.cn/finance')
+            # 成交量、涨停数、上证指數
+            pan_data = pan_data + '成交量：{} \n 涨停：{} \n 上证：{}({})\n'.format(
+                chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div/div[1]/div[2]/div/div/div/div[2]/div[1]/div[2]'),
+                chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div/div[1]/div[2]/div/div/div/div[1]/div[2]/span[1]'),
+                chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div/div[1]/div[1]/div/div[1]/a[1]/div'),
+                chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div/div[1]/div[1]/div/div[1]/a[2]/div')
+            )
+
+            # 上涨数
+            chrome.access('https://www.cls.cn/quotation')
+            pan_data = pan_data + '上涨：{} \n'.format(
+                chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[2]/div[2]/div[3]/div[1]/span[2]'))
+            pan_data = pan_data
+            review.pan_data = pan_data
+
+            # 今日总结
+            chrome.access('https://www.cls.cn/subject/1139')
+            review.pan_summary = chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[1]/div[2]/div[2]/div[1]/div[2]/div[1]/a')
+
+            # 今日焦点
+            chrome.access('https://www.cls.cn/subject/1135')
+            review.pan_focus = chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[1]/div[2]/div[2]/div[1]/div[2]/div[1]/a')
+
+            # 板块，流入流出
+            chrome.access('https://www.cls.cn/hotPlate')
+            bk_in, bk_out = '', ''
+            for i in range(1, 7):
+                bk_info = '{}({} {})，'.format(
+                    chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[1]/div[2]/a[{}]/div[2]'.format(i)),
+                    chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[1]/div[2]/a[{}]/div[3]/div[1]/span[2]'.format(i)),
+                    chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[1]/div[2]/a[{}]/div[3]/div[2]/span[2]'.format(i))
+                )
+                if i < 4:
+                    bk_in = bk_in + bk_info
+                else:
+                    bk_out = bk_out + bk_info
+            review.bk_in, review.bk_out = bk_in, bk_out
+
+            # 板块，潜力
+            bk_ql = ''
+            for i in range(2, 5):
+                el_bk_ql_name = chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[1]/div[{}]/div[1]/div[2]/div[1]/a'.format(i))
+                el_bk_ql_comment = chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[1]/div[{}]/div[2]/ul/li/a'.format(i))
+                el_bk_ql_gp1 = chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[1]/div[{}]/div[3]/div[1]/a'.format(i))
+                el_bk_ql_gp2 = chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[1]/div[{}]/div[3]/div[2]/a'.format(i))
+                bk_ql = bk_ql + '{}。{}, {}、{} \n'.format(el_bk_ql_name, el_bk_ql_comment, el_bk_ql_gp1, el_bk_ql_gp2)
+            review.bk_ql = bk_ql
+
+            # 板块 风口
+            bk_fk = ''
+            for i in range(2, 5):
+                el_bk_fk_name = chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[2]/div[{}]/div[1]/div[2]/div[1]/a'.format(i))
+                el_bk_fk_comment = chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[2]/div[{}]/div[2]/div'.format(i))
+                el_bk_fk_gp = chrome.text('//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[2]/div[{}]/div[3]/div/a'.format(i))
+                bk_fk = bk_fk + '{}。{}, {} \n'.format(el_bk_fk_name, el_bk_fk_comment,el_bk_fk_gp)
+            review.bk_fk = bk_fk
+
+            # 热股
+            gp_hot1 = ''
+            chrome.access('https://api3.cls.cn/quote/toplist')
+            hot_list = chrome.driver.find_elements(By.CLASS_NAME, 'hot-list-right-box')
+            j = 1
+            for el in hot_list:
+                els = el.find_elements(By.CLASS_NAME, 'openapp')
+                flag = False
+                # print('No.', j)
+                for el2 in els:
+                    final_str = re.sub(r"^\s+|\s+$", "", el2.text)
+                    txt = final_str.split('\n')
+                    if txt != '':
+                        i = 0
+                        for t in txt:
+                            if t != '\n':
+                                gp_hot1 = gp_hot1 + t
+                                flag = True
+                                # print(i, t)
+                                i = i + 1
+                if flag:
+                    gp_hot1 = gp_hot1 + '\n'
+                j = j + 1
+            review.gp_hot1 = gp_hot1
+            review.created = datetime.now()
+            review.save()
+        finally:
+            chrome.quit()
+
+
+@job_engine
+class DailyHot(Fetcher):
+    def fetch(self):
+        pass
+
+
+@job_engine
+class DailyZhangTing(Fetcher):
+    def fetch(self):
+        chrome = ChromeDriver()
+        chrome.access('https://www.jiuyangongshe.com/action')
+        chrome.click('//div[@class="active"]')
+        chrome.click('//div[@id="tab-accounts"]')
+        chrome.input('//div[@id="pane-accounts"]//input[@name="phone"]', '13631367271')
+        chrome.input('//div[@id="pane-accounts"]//input[@name="password"]', 'hsy841121')
+        chrome.click('//div[@id="pane-accounts"]//button[@type="button"]')
         time.sleep(3)
-        el = WebDriverWait(driver, 20).until(expected_conditions.presence_of_element_located(
-            (By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div/div[1]/div[2]/div/div/div/div[2]/div[1]/div[2]')))
-        pan_data = pan_data + '成交量：{} \n'.format(el.text)
-
-        # 上证
-        el = WebDriverWait(driver, 20).until(expected_conditions.presence_of_element_located(
-            (By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div/div[1]/div[1]/div/div[1]/a[1]/div')))
-        el1 = WebDriverWait(driver, 20).until(expected_conditions.presence_of_element_located(
-            (By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div/div[1]/div[1]/div/div[1]/a[2]/div')))
-        sz_txt = '上证：{}({})'.format(el.text, el1.text)
-
-        # 涨停数
-        el = WebDriverWait(driver, 20).until(expected_conditions.presence_of_element_located(
-            (By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div/div[1]/div[2]/div/div/div/div[1]/div[2]/span[1]')))
-        pan_data = pan_data + '涨停：{} \n'.format(el.text.replace('涨停', ''))
-
-        # 上涨数
-        driver.get('https://www.cls.cn/quotation')
-        el = WebDriverWait(driver, 20).until(expected_conditions.presence_of_element_located(
-            (By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[2]/div[2]/div[3]/div[1]/span[2]')))
-        pan_data = pan_data + '上涨：{} \n'.format(el.text)
-        pan_data = pan_data + sz_txt
-
-        review.pan_data = pan_data
-
-        # 今日总结
-        driver.get('https://www.cls.cn/subject/1139')
-        el = WebDriverWait(driver, 20).until(expected_conditions.presence_of_element_located(
-            (By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[1]/div[2]/div[2]/div[1]/div[2]/div[1]/a')))
-        review.pan_summary = el.text
-
-        # 今日焦点
-        driver.get('https://www.cls.cn/subject/1135')
-        el = WebDriverWait(driver, 20).until(expected_conditions.presence_of_element_located(
-            (By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[1]/div[2]/div[2]/div[1]/div[2]/div[1]/a')))
-        review.pan_focus = el.text
-
-        # 板块，流入流出
-        driver.get('https://www.cls.cn/hotPlate')
-        bk_in, bk_out = '', ''
-        for i in range(1, 7):
-            el_bk_name = driver.find_element(
-                By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[1]/div[2]/a[{}]/div[2]'.format(i))
-            el_bk_raise = driver.find_element(
-                By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[1]/div[2]/a[{}]/div[3]/div[1]/span[2]'.format(i))
-            el_bk_vol = driver.find_element(
-                By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[1]/div[2]/a[{}]/div[3]/div[2]/span[2]'.format(i))
-            if i < 4:
-                bk_in = bk_in + ' ' + el_bk_name.text + ' ' + el_bk_raise.text + ' ' + el_bk_vol.text + '，'
-            else:
-                bk_out = bk_out + ' ' + el_bk_name.text + ' ' + el_bk_raise.text + ' ' + el_bk_vol.text + '，'
-        review.bk_in = bk_in
-        review.bk_out = bk_out
-
-        # 板块，潜力
-        bk_ql = ''
-        for i in range(2, 5):
-            el_bk_ql_name = driver.find_element(
-                By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[1]/div[{}]/div[1]/div[2]/div[1]/a'
-                .format(i))
-            el_bk_ql_comment = driver.find_element(
-                By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[1]/div[{}]/div[2]/ul/li/a'
-                .format(i))
-            el_bk_ql_gp1 = driver.find_element(
-                By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[1]/div[{}]/div[3]/div[1]/a'
-                .format(i))
-            el_bk_ql_gp2 = driver.find_element(
-                By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[1]/div[{}]/div[3]/div[2]/a'
-                .format(i))
-            bk_ql = bk_ql + '{}。{}, {}({})、{}({}) \n'.format(el_bk_ql_name.text, el_bk_ql_comment.text,
-                                                             el_bk_ql_gp1.text, el_bk_ql_gp1.get_attribute('href'),
-                                                             el_bk_ql_gp2.text, el_bk_ql_gp2.get_attribute('href'))
-            # print(el_bk_ql_name.text, el_bk_ql_comment.text,
-            #       el_bk_ql_gp1.text, el_bk_ql_gp1.get_attribute('href').split('=')[1],
-            #       el_bk_ql_gp2.text, el_bk_ql_gp2.get_attribute('href').split('=')[1])
-
-        review.bk_ql = bk_ql
-
-        # 板块 风口
-        bk_fk = ''
-        for i in range(2, 5):
-            el_bk_fk_name = driver.find_element(
-                By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[2]/div[{}]/div[1]/div[2]/div[1]/a'
-                .format(i))
-            el_bk_fk_comment = driver.find_element(
-                By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[2]/div[{}]/div[2]/div'
-                .format(i))
-            el_bk_fk_gp = driver.find_element(
-                By.XPATH, '//*[@id="__next"]/div/div[2]/div[2]/div[2]/div/div[2]/div[{}]/div[3]/div/a'
-                .format(i))
-            bk_fk = bk_fk + '{}。{}, {}({}) \n'.format(el_bk_fk_name.text, el_bk_fk_comment.text,
-                                                      el_bk_fk_gp.text, el_bk_fk_gp.get_attribute('href'))
-            # print(el_bk_fk_name.text, el_bk_fk_comment.text,
-            #       el_bk_fk_gp.text, el_bk_fk_gp.get_attribute('href').split('=')[1])
-        review.bk_fk = bk_fk
-
-        # 热股
-        gp_hot1 = ''
-        driver.get('https://api3.cls.cn/quote/toplist')
+        chrome.driver.refresh()
         time.sleep(5)
-        hot_list = driver.find_elements(By.CLASS_NAME, 'hot-list-right-box')
-        j = 1
-        for el in hot_list:
-            els = el.find_elements(By.CLASS_NAME, 'openapp')
-            flag = False
-            # print('No.', j)
-            for el2 in els:
-                final_str = re.sub(r"^\s+|\s+$", "", el2.text)
-                txt = final_str.split('\n')
-                if txt != '':
-                    i = 0
-                    for t in txt:
-                        if t != '\n':
-                            gp_hot1 = gp_hot1 + t
-                            flag = True
-                            # print(i, t)
-                            i = i + 1
-            if flag:
-                gp_hot1 = gp_hot1 + '\n'
-            j = j + 1
-        review.gp_hot1 = gp_hot1
-        review.created = datetime.now()
-        review.save()
-        driver.quit()
+        modules = chrome.driver.find_elements(By.CLASS_NAME, "module")
+
+        for i in range(1, len(modules)):
+            module = chrome.element('//*[@id="__layout"]/div/div[2]/div/div/section/ul/li[{}]'.format(i+1))
+            parent = module.find_element(By.XPATH, ".//div[contains(@class, 'parent')]/div[1]")
+            lis = module.find_elements(By.TAG_NAME, 'li')
+            for li in lis:
+                bk = parent.text
+                shrinks = li.find_elements(By.XPATH, ".//div[contains(@class, 'shrink')]")
+                name = shrinks[0].get_attribute("innerText")
+                code = shrinks[1].get_attribute("innerText")
+                price = shrinks[2].get_attribute("innerText")
+                zf = shrinks[3].get_attribute("innerText")
+                ztt = shrinks[4].get_attribute("innerText")
+                comment = li.find_element(By.XPATH, ".//pre[contains(@class, 'pre')]/a").get_attribute("innerText")
+                comment = comment.split('\n')[0]
+                # for shrink in shrinks:
+                #     print(shrink.get_attribute("innerText"))
+                ZhangTing.add(code, name, bk, price, zf, ztt, comment)
+        chrome.quit()
+
+

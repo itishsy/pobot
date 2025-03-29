@@ -48,7 +48,7 @@ class SignalNotify(Sender):
                 msg = msg + "http://xueqiu.com/S/SZ{} {},{},{} ".format(si.code, si.dt, si.freq, si.strategy)
 
         if msg != '':
-            if email('Review', msg):
+            if email('Signal', msg):
                 for si in sis:
                     si.notify = 1
                     si.updated = datetime.datetime.now()
