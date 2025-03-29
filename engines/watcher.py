@@ -4,6 +4,7 @@ from candles.marker import mark
 from signals.divergence import diver_top, diver_bottom
 from models.choice import Choice
 from models.ticket import Ticket
+from datetime import datetime, timedelta
 
 
 @job_engine
@@ -15,17 +16,19 @@ class B5(Watcher):
         dbs = diver_bottom(candles)
         if len(dbs) > 0:
             sig = dbs[-1]
-            cho = Choice.select().where(Choice.code == code).first()
-            if cho:
-                if cho.freq == 30 and cho.dt < sig.dt:
-                    if cho.price < sig.price:
-                        cho.b_sig = 1
-                        cho.save()
-                        return sig
-                    else:
-                        Choice.delete().where(Choice.code == code).execute()
-            else:
+            if sig.dt > (datetime.now() - timedelta(days=3)).strftime("%Y-%m-%d"):
                 return sig
+            # cho = Choice.select().where(Choice.code == code).first()
+            # if cho:
+            #     if cho.freq == 30 and cho.dt < sig.dt:
+            #         if cho.price < sig.price:
+            #             cho.b_sig = 1
+            #             cho.save()
+            #             return sig
+            #         else:
+            #             Choice.delete().where(Choice.code == code).execute()
+            # else:
+            #     return sig
 
 
 @job_engine
@@ -37,17 +40,20 @@ class B15(Watcher):
         dbs = diver_bottom(candles)
         if len(dbs) > 0:
             sig = dbs[-1]
-            cho = Choice.select().where(Choice.code == code).first()
-            if cho:
-                if cho.freq == 60 and cho.dt < sig.dt:
-                    if cho.price < sig.price:
-                        cho.b_sig = 1
-                        cho.save()
-                        return sig
-                    else:
-                        Choice.delete().where(Choice.code == code).execute()
-            else:
+            if sig.dt > (datetime.now() - timedelta(days=5)).strftime("%Y-%m-%d"):
                 return sig
+            # sig = dbs[-1]
+            # cho = Choice.select().where(Choice.code == code).first()
+            # if cho:
+            #     if cho.freq == 60 and cho.dt < sig.dt:
+            #         if cho.price < sig.price:
+            #             cho.b_sig = 1
+            #             cho.save()
+            #             return sig
+            #         else:
+            #             Choice.delete().where(Choice.code == code).execute()
+            # else:
+            #     return sig
 
 
 @job_engine

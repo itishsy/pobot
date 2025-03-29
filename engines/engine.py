@@ -32,18 +32,10 @@ class Searcher(ABC):
                 print('[{0}] {1} searching by {2} ({3}) '.format(datetime.now(), co, self.strategy, count))
                 sig = self.search(co)
                 if sig:
-                    # if sig.freq < 30:
-                    #     sig.notify = 0
-                    # else:
-                    #     sig.notify = -1
                     sig.code = co
                     sig.strategy = self.strategy
                     sig.stage = 'choice'
                     sig.upset()
-
-                    sym.is_watch = 1
-                    sym.updated = datetime.now()
-                    sym.save()
 
                     # if not Choice.select().where((Choice.code == co) & (Choice.strategy == self.strategy)).exists():
                     #     cho = Choice.create(code=co, name=sym.name, strategy=self.strategy, dt=sig.dt, price=sig.price, freq=sig.freq, status=1, created=datetime.now(), updated=datetime.now())
@@ -66,7 +58,7 @@ class Watcher(ABC):
         for sym in symbols:
             try:
                 sig = self.watch(sym.code)
-                if sig:
+                if sig and not Signal.select().where(Signal.dt == sig.dt and Signal.code == sym.code):
                     sig.code = sym.code
                     sig.name = sym.name
                     sig.stage = 'watch'

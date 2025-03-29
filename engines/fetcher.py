@@ -1,7 +1,8 @@
 from engines.engine import job_engine, Fetcher
 from models.symbol import Symbol
 from models.zhangting import ZhangTing
-from datetime import datetime
+from models.hot import Hot
+from datetime import datetime, timedelta
 from candles.finance import clean_data, fetch_and_save
 import efinance as ef
 from selenium import webdriver
@@ -64,7 +65,7 @@ class Symbols(Fetcher):
                     symbol = Symbol()
                     symbol.code = code
                     symbol.updated = datetime.now()
-                symbol.name = name
+                symbol.name = name.replace(' ', '')
                 for k in series.keys():
                     val = series[k]
                     if str(k).startswith('净利润'):
@@ -274,7 +275,28 @@ class DailyReview(Fetcher):
 @job_engine
 class DailyHot(Fetcher):
     def fetch(self):
-        pass
+        chrome = ChromeDriver()
+        chrome.access('https://www.tgb.cn/new/nrnt/toPopularityBoard')
+        chrome.click("//span[text()='24小时榜单']")
+        # parent = module.find_element(By.XPATH, ".//div[contains(@class, 'parent')]/div[1]")
+        els = chrome.driver.find_elements(By.XPATH, "//div[contains(@class, 'rqb-gpb-data')]")
+        rank = 0
+        for el in els:
+            arr = el.text.split('\n')
+            name = arr[0]
+            if name != '机器人' and not name.__contains__('ST') and Symbol.select().where(Symbol.name == name).exists():
+                comment = el.text.split(name)[1].replace('\n', ' ')[1:]
+                sym = Symbol.get(Symbol.name == name)
+                if not sym.code.startswith('688'):
+                    rank += 1
+                    Hot.add(sym.code, name, rank, comment)
+            if rank >= 30:
+                break
+        chrome.quit()
+        Symbol.update(is_watch=0).execute()
+        hots = Hot.select().where(Hot.date >= (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d"))
+        for h in hots:
+            Symbol.update(is_watch=1).where(Symbol.code == h.code).execute()
 
 
 @job_engine
