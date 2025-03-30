@@ -25,6 +25,7 @@ class GameState(BaseModel):
     action = CharField(null=True)
     strength = CharField(null=True)
     win_rate = FloatField(null=True)
+    players = TextField(null=True)
     player1 = TextField(null=True)
     player2 = TextField(null=True)
     player3 = TextField(null=True)
@@ -66,9 +67,12 @@ class State:
     stage = None
     call = None
     action = None
+    bet = None
     reward = None
     strength = None
     win_rate = None
+    call_ev = None
+    raise_ev = None
     players = []
 
     def to_dict(self):
