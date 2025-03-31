@@ -8,6 +8,6 @@ class ActType(Enum):
     limp = 1004
     calling = 1005
     check_raise = 1006
-    fl0p_big_bet = 1007
+    flop_big_bet = 1007
     first_bet = 1008
   
