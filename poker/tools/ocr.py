@@ -4,6 +4,7 @@ from PIL import Image
 
 from poker.tools.util import match_color, contain_color, ordered_hand, process_config
 from poker.models.game import State, Player
+from poker.config import SB, BB
 
 
 class PokerOcr:
@@ -175,6 +176,7 @@ class PokerOcr:
         pls = []
         w, h, bw, bh = self.ocr_config['player']['w_h'][0], self.ocr_config['player']['w_h'][1], self.ocr_config['player']['bet_w_h'][0], self.ocr_config['player']['bet_w_h'][1]
         self_pos = self.__pos()
+        bet_amount = 0.0
         for i in range(1, 6):
             if i in [1, 3, 4]:
                 player_xy = eval("self.ocr_config['player']['{}_x1_y1']".format(i))
@@ -190,15 +192,26 @@ class PokerOcr:
             name = self.__ocr_txt((x, y, x+w, y+h))
             stack = self.__ocr_amt((x, y+h-5, x+w, y+h+h-5))
             amount = self.__ocr_amt((bx, by, bx+bw, by+bh))
-            if amount > 0:
-                active = 1
-            else:
-                active = contain_color(self.image.crop((x + 30, y + 5, x + w - 30, y + h - 10)),
+            active = 1 if amount > 0 else contain_color(self.image.crop((x + 30, y + 5, x + w - 30, y + h - 10)),
                                        self.ocr_config['player']['active_color'])
             position = (self_pos + i) % 6 if self_pos + i != 6 else 6
             if active:
                 if amount > 0:
-                    action = 'bet'
+                    if position == 0 and amount == SB:
+                        action = 'sb'
+                    elif position == 1 and amount == BB:
+                        action = 'bb'
+                    else:
+                        action = 'bet'      # 也可能是 call、raise
+                    if bet_amount == 0.0:
+                        bet_amount = amount
+                    else:
+                        if amount > bet_amount:
+                            action = 'raise'
+                        elif amount == bet_amount:
+                            action = 'call'
+                        else:
+                            action = 'fold'
                 else:
                     if position > self_pos:
                         action = 'pending'

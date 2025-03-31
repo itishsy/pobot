@@ -34,6 +34,13 @@ class GameState(BaseModel):
 
 
 class Player:
+    name = None
+    position = None
+    stack = 0.0
+    action = None
+    amount = 0.0
+    active = None
+
     def __init__(self, name, position, stack, action='pending', active=None, amount=None):
         self.name = name
         self.position = position
@@ -90,9 +97,13 @@ class State:
         }
 
     def get_player(self, name):
-        for player in players:
+        for player in self.players:
             if player.name == name:
                 return player
+
+    def active_players(self):
+        active_players = [p for p in self.players if p.active == 1]
+        return sorted(active_players, key=lambda x: x.position)
 
 
 class Game(BaseModel):
@@ -123,35 +134,45 @@ class Game(BaseModel):
             print('------------------new game:', state.stack, ' ------------------')
             if self.hand is not None:
                 self.persist(state.stack)
-                self.states.clear()
-                self.opponent_pre_flop_ranges.clear()
+            self.states.clear()
+            self.opponent_pre_flop_ranges.clear()
             self.code = datetime.now().strftime('%Y%m%d%H%M%S')
             self.hand = state.hand
             self.position = state.position
             self.stack = state.stack
-            init_state = copy.copy(state)
+            init_state = copy.deepcopy(state)
             init_state.code = self.code
+            init_state.stage = 0
             init_state.pot = SB + BB
             init_state.players.clear()
-            sorted_players = sorted(state.players, key=lambda x: x.position)
-            for player in sorted_players:
-                if player.position == 0:
-                    stack = player.stack + SB
-                elif player.position == 1:
-                    stack = player.stack + BB
+            for sp in state.players:
+                if sp.position == 0:
+                    action = 'sb'
+                    stack = round(sp.stack + SB, 2)
+                elif sp.position == 1:
+                    action = 'bb'
+                    stack = round(sp.stack + BB, 2)
                 else:
-                    stack = player.stack + player.amount
-                init_state.players.append(Player(player.name,player.position,stack, action='pending', active=True))
+                    action = 'pending'
+                    stack = round(sp.stack + sp.amount, 2)
+                init_state.players.append(Player(sp.name, sp.position, stack, action=action, active=True))
             self.states.append(init_state)
 
-        # sle = len(self.states)
         pre_state = self.states[-1]
         if state.stage != pre_state.stage or state.pot != pre_state.pot:
             # 计算玩家action, 追加最新state
             state.code = self.code
-            self.set_players_state(state)
+            active_players = state.active_players()
+            pending_players = [p for p in pre_state.players if p.action == 'pending']
+            for pp in pending_players:
+                gp = state.get_player(pp.name)
+                if gp:
+                    pp.action = 'call'
+                else:
+                    pp.action = 'fold'
+
+            # self.set_players_state(state)
             self.states.append(state)
-        # print('states1:{}'.format(sle), 'states2:{}'.format(len(self.states)))
 
     def set_players_state(self, new_state):
         pre_state = self.states[-1]
