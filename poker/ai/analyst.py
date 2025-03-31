@@ -294,7 +294,7 @@ class StrategicAnalyst:
             return 0.2
         # return float(np.clip(base_prob, 0.1, 0.8))
 
-    def _player_act(self):
+    def _player_analyze(self):
         active_numbers = 1  # 入池人数
         raise_times = 0     # 加注次数
         c_bet_times = 0     # 持续下注次数
@@ -305,5 +305,6 @@ class StrategicAnalyst:
                     raise_times += 1
         if len(self.game.states) > 1:
             pre_state = self.game.states[-2]
+            
 
 
