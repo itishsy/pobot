@@ -89,6 +89,11 @@ class State:
             'players': [obj.to_dict() for obj in self.players]
         }
 
+    def get_player(self, name):
+        for player in players:
+            if player.name == name:
+                return player
+
 
 class Game(BaseModel):
     class Meta:
