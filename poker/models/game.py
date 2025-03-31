@@ -120,7 +120,7 @@ class Game(BaseModel):
 
     def add_state(self, state):
         if state.hand != self.hand or state.position != self.position:
-            print('------------------ ', state.stack, ' ------------------')
+            print('------------------new game:', state.stack, ' ------------------')
             if self.hand is not None:
                 self.persist(state.stack)
                 self.states.clear()
@@ -129,15 +129,20 @@ class Game(BaseModel):
             self.hand = state.hand
             self.position = state.position
             self.stack = state.stack
-            first_state = copy.deepcopy(state)
-            first_state.code = self.code
-            first_state.pot = SB + BB
-            first_state.players.clear()
-            for i in range(1, 6):
-                player = state.players[i-1]
-                player.stack = player.stack + player.amount
-                first_state.players.append(player)
-            self.states.append(first_state)
+            init_state = copy.copy(state)
+            init_state.code = self.code
+            init_state.pot = SB + BB
+            init_state.players.clear()
+            sorted_players = sorted(state.players, key=lambda x: x.position)
+            for player in sorted_players:
+                if player.position == 0:
+                    stack = player.stack + SB
+                elif player.position == 1:
+                    stack = player.stack + BB
+                else:
+                    stack = player.stack + player.amount
+                init_state.players.append(Player(player.name,player.position,stack, action='pending', active=True))
+            self.states.append(init_state)
 
         # sle = len(self.states)
         pre_state = self.states[-1]
