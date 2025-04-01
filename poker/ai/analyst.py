@@ -105,6 +105,17 @@ class StrategicAnalyst:
         pot = self.state.pot
         call = self.state.call
         win_rate = self.state.win_rate
+        if call>0:
+            if self.state.call_ev<0:
+                return 'fold',0
+            else:
+                # raise or call
+                is_min_call=call<BB*3
+                if win_rate>=0.8:
+                    if is_min_call:
+                        return 'raise', random.randint(2, 4)
+                    else:
+                         
         
     #     if score >= 0.8:
     #         # 超强牌，造大底池ii
