@@ -83,26 +83,31 @@ class StrategicAnalyst:
         #  贏率降低的條件有：入池人數越多、牌面越濕、玩家存在c-bet，check-raise等行為
         """
         adjust_rate = 1
+        pot = self.state.pot 
         if self.state.stage == 0:
+            p_level=0 if pot<5*BB else 1 if pot<20*BB else 2
             strength = HandScore.get_score(self.state.hand[0], self.state.hand[1])
-            # pre-flop阶段，降低赢率的因素有入池人数与底池大小
-            adjust_rate = 0.9 if self.state.pot > (20 * BB) else 1
+            # 翻牌前，调节赢率的变量：底池大小
+            if strength>0.8:
+                adjust_rate = 1.2 if p_level==1 else 1.1 if p_level==2 else 1
+            elif strength>0.65:
+                adjust_rate = 0.9 if p_level==1 else 0.8 if p_level==2 else 1
+            else:
+                adjust_rate = 0.8 if p_level==1 else 0.7 if p_level==2 else 1
         else:
             strength = eval_strength(self.state.hand, self.state.board, self.game.opponent_pre_flop_ranges)
-            active_size = 0
-            raise_size = 0
-
-            if active_size > 2:
-                adjust_rate = adjust_rate * 0.9
-            if raise_size > 1:
-                adjust_rate = adjust_rate * 0.9
-
+            # 翻牌后，调节赢率的变量： 玩家的行为特征+牌面湿润度
+            h_level =1.1 if no_raise() else 1 if no_cbet_tbet() else 0.9
+            w_level=1 if no_pair() else 0.9 if one_pair() else 0.8
+            if is_nuts():
+                adjust_rate = 2
+            else:
+                adjust_rate = h_level * w_level
         self.state.strength = strength
         self.state.win_rate = round(strength * adjust_rate, 4)
 
     def __pre_flop_action(self):
         position = self.state.position
-        pot = self.state.pot
         call = self.state.call
         win_rate = self.state.win_rate
         if call>0:
@@ -110,43 +115,44 @@ class StrategicAnalyst:
                 return 'fold',0
             else:
                 # raise or call
-                is_min_call=call<BB*3
-                if win_rate>=0.8:
-                    if is_min_call:
+                c_level=0 if call<BB*3 else 2 if call>10*BB else 1
+                if win_rate>0.8:
+                    return 'raise', random.randint(2, 4)
+                elif win_rate>0.7:
+                    if random.randint(1,100)<win_rate*100:
                         return 'raise', random.randint(2, 4)
                     else:
-                         
-        
-    #     if score >= 0.8:
-    #         # 超强牌，造大底池ii
-    #         if pot < 4 * BB:
-    #             return 'raise', random.randint(2, 4)
-    #         return 'raise', random.randint(3, 6)
-    #     elif 0.8 > score >= 0.7:
-    #         # 强牌，控制底池到合适的大小
-    #         if call > 3 * BB:
-    #             return 'call', 0
-    #         return 'raise', random.randint(2, 4)
-    #     elif 0.7 > score >= 0.6:
-    #         # 中强牌，控制底池，避免参与过大的底池
-    #         if call < 2 * BB:
-    #             return 'raise', random.randint(1, 2)
-    #         if 2 * BB <= call <= 10 * BB and call_ev > 0:
-    #             return 'call', 0
-    #         if call_ev == 0 and position == 6 and random.randint(1, 3) == 1:
-    #             return 'raise', random.randint(1, 2)
-    #     elif 0.6 > score >= 0.55:
-    #         # 中等牌，避免参与过大的底池
-    #         if pot < 30 * BB:
-    #             if call_ev > 0:
-    #                 return 'call', 0
-    #             if call_ev == 0 and position == 6 and random.randint(1, 3) == 1:
-    #                 return 'raise', random.randint(1, 2)
-    #     elif 0.55 > score >= 0.5:
-    #         # 弱牌，小底池有位置可参与
-    #         if pot < 20 * BB and position in (1, 2, 5, 6) and call_ev > 0 and random.randint(1, 3) == 1:
-    #             return 'call', 0
-    #     return 'fold', 0
+                        return 'call',0
+                elif win_rate>0.6:
+                    if c_level =2:
+                        if random.randint(1,100)<win_rate*100:
+                            return 'call', 0
+                        else:
+                            return 'fold', 0
+                    else:
+                        return 'call', 0
+                else win_rate>0.5:
+                    if c_level =2:
+                        return 'fold', 0
+                    elif position >4 or c_level=0:
+                        return 'call', 0
+                    else:
+                        return 'fold', 0
+                else:
+                    return 'fold', 0
+        else:
+            if self.state.raise_ev<BB:
+                return 'check', 0
+            else:
+                if win_rate>0.8:
+                    return 'raise', random.randint(2, 4)
+                elif win_rate>0.55:
+                    if random.randint(1,100)<win_rate*100:
+                        return 'raise', random.randint(1, 3)
+                    else:
+                        return 'check', 0
+                else:
+                    return 'check', 0
 
     def __flop_action(self):
         # 风险调整系数
