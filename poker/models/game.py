@@ -236,6 +236,7 @@ class Game(BaseModel):
         self.hand = json.dumps(self.hand)
         self.save()
         for state in self.states:
+            active_players=json.dumps([obj.to_dict() for obj in state.active_players()])
             game_state = GameState(
                 code=self.code,
                 hand=json.dumps(state.hand),
@@ -248,6 +249,7 @@ class Game(BaseModel):
                 win_rate=state.win_rate,
                 call=state.call,
                 action=state.action,
+                players=active_players(),
                 player1=json.dumps(state.players[0].to_dict()),
                 player2=json.dumps(state.players[1].to_dict()),
                 player3=json.dumps(state.players[2].to_dict()),
