@@ -1,7 +1,7 @@
 import pyautogui
 import random
 
-from poker.tools.util import match_color, process_config
+from utils import match_color, process_config
 
 
 class PokerRpa:
