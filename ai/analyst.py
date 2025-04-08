@@ -1,8 +1,8 @@
 from treys import Evaluator, Card, Deck
-from poker.models.card import basic_strength, eval_strength, wet_board
-from poker.models.card import HandScore
+from models.card import basic_strength, eval_strength, wet_board
+from models.card import HandScore
 import random
-from poker.config import SB, BB, ranks, suits
+from config import SB, BB, ranks, suits
 import numpy as np
 
 
