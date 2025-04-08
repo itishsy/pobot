@@ -4,7 +4,7 @@ from flask_peewee.db import CharField, AutoField, FloatField
 from itertools import combinations
 import random
 import numpy as np
-from poker.config import BB
+from config import BB
 from collections import defaultdict
 from enum import Enum
 
