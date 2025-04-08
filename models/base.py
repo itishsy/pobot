@@ -26,11 +26,7 @@ class BaseModel(Model):
 
 
 if __name__ == '__main__':
-    from models.signal import Signal
-    from models.choice import Choice
-    from models.ticket import Ticket
-    from models.component import Component
-    from models.trade import Trade
+    from models.game import Game,State
 
     db.connect()
-    db.create_tables([Signal, Choice, Ticket, Component, Trade])
+    db.create_tables([Game,State])
