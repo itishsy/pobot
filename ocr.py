@@ -2,9 +2,9 @@ import ddddocr
 import io
 from PIL import Image
 
-from poker.tools.util import match_color, contain_color, ordered_hand, process_config
-from poker.models.game import State, Player
-from poker.config import SB, BB
+from utils import match_color, contain_color, ordered_hand, process_config
+from models.game import State, Player
+from config import SB, BB
 
 
 class PokerOcr:
