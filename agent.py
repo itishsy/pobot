@@ -2,10 +2,10 @@ import time
 from datetime import datetime
 
 
-from poker.tools.ocr import PokerOcr
-from poker.tools.rpa import PokerRpa
-from poker.models.game import Game
-from poker.ai.ai import PokerAI
+from ocr import PokerOcr
+from rpa import PokerRpa
+from models.game import Game
+from ai.ai import PokerAI
 
 
 class GameAgent:
