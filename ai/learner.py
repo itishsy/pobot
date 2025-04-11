@@ -4,7 +4,7 @@ import torch.optim as optim
 import numpy as np
 from collections import deque
 import random
-from poker.ai.processor import StateProcessor
+from ai.processor import StateProcessor
 
 
 class PokerDrl(nn.Module):

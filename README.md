@@ -1,2 +1,0 @@
-# pobot
-poker ai bot

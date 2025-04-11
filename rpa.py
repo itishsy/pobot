@@ -1,7 +1,8 @@
 import pyautogui
 import random
 
-from utils import match_color, process_config
+from config import process_config
+from ocr import match_color
 
 
 class PokerRpa:
@@ -24,11 +25,11 @@ class PokerRpa:
     def __get_win(self):
         if self.win is None:
             wins = pyautogui.getWindowsWithTitle(self.win_title)
-            if wins and wins[0] and (wins[0].left >= -10 or wins[0].top >= -10):
+            if wins and wins[0] and (wins[0].left >= -50 or wins[0].top >= -50):
                 self.win = wins[0]
         return self.win
 
-    def shot(self):
+    def shot_win(self):
         win = self.__get_win()
         if win:
             image = pyautogui.screenshot(region=(win.left, win.top, win.width, win.height))
@@ -42,8 +43,8 @@ class PokerRpa:
         # print('none image')
         return None
 
-    def do(self, action, raised=0):
-        if action in self.actions:
+    def do_action(self, action, raised=0):
+        if self.win and action in self.actions:
             print(action, raised)
             if raised > 0:
                 pyautogui.moveTo(self.position_button_add_amount[0], self.position_button_add_amount[1], duration=0.2)
@@ -54,8 +55,6 @@ class PokerRpa:
                 self.__call()
             elif 'raise' == action or 'bet' == action:
                 self.__raise()
-            # act = getattr(self, '__{}'.format(action))
-            # act()
             pyautogui.moveTo(self.position_button_fold[0] + random.randint(-100, 100),
                              self.position_button_fold[1] + random.randint(100, 300) - 800,
                              duration=0.8)  # duration 参数表示鼠标移动的时间

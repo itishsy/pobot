@@ -2,10 +2,34 @@ import ddddocr
 import io
 from PIL import Image
 
-from utils import match_color, contain_color, ordered_hand, process_config
 from models.game import State, Player
-from config import SB, BB
+from config import SB, BB, process_config
 
+
+def match_color(color1, color2, diff=100):
+    return (abs(color1[0] - color2[0]) < diff and
+            abs(color1[1] - color2[1]) < diff and
+            abs(color1[2] - color2[2]) < diff)
+
+
+def contain_color(image, color):
+    width, height = image.size
+    # 遍历所有像素
+    for x in range(width):
+        for y in range(height):
+            current_rgb = image.getpixel((x, y))
+            if current_rgb == color:
+                return True
+    return False
+
+
+def ordered_hand(hand):
+    rank1 = hand[0][:-1]
+    rank2 = hand[1][:-1]
+    if ranks.index(rank1) > ranks.index(rank2):
+        return hand
+    else:
+        return [hand[1], hand[0]]
 
 class PokerOcr:
 
@@ -13,47 +37,6 @@ class PokerOcr:
         self.ocr = ddddocr.DdddOcr()
         self.image = None
         self.ocr_config = process_config()
-
-        # region=(x1,y1,x2,y2)，其中x1,y1为区域左上角,x2,y2为区域右下角; 用wh来表示为(x1,y1,x1+w,y1+h)
-        # 7张牌。
-        # self.hand_region = ocr_config['hand']['region']   # (645, 690, 800, 735)
-        # self.hand1_pos = ocr_config['hand']['card1_x1_y1']   # (645, 690)
-        # self.hand1_suit_x_y = ocr_config['hand']['suit1_x_y']   # (676, 751)
-        # self.hand2_pos = ocr_config['hand']['card2_x1_y1']   # (718, 690)
-        # self.hand2_suit_x_y = ocr_config['hand']['suit2_x_y']   # (737, 746)
-        # self.board_x_y = ocr_config['board']['card1_x_y']   # (486, 408)
-        # self.board_suit_x_y = ocr_config['board']['suit1_x_y']   # (546, 486)
-        # self.board_distance = ocr_config['board']['distance']   # 105
-        # self.card_w_h = ocr_config['board']['card_w_h']   # (45, 35)
-        # self.suit_color = (ocr_config['suit']['s'],
-        #                    ocr_config['suit']['h'],
-        #                    ocr_config['suit']['d'],
-        #                    ocr_config['suit']['c'])    # ((0, 0, 0), (202, 23, 27), (29, 126, 45), (1, 30, 196))   # 4种花色的rgb
-        #
-        # # 5个玩家: 名称、金额、打出金额。只需定位134,25可计算出来
-        # self.player1_x1_y1 = ocr_config['player']['1_x1_y1']   # (185, 660)
-        # self.player3_x1_y1 = ocr_config['player']['3_x1_y1']   # (666, 225)
-        # self.player4_x1_y1 = ocr_config['player']['4_x1_y1']   # (1090, 310)
-        # self.player_w_h = ocr_config['player']['w_h']   # (175, 31)
-        # self.player1_bet_x1_y1 = ocr_config['player']['1_bet_x1_y1']   # (350, 575)
-        # self.player3_bet_x1_y1 = ocr_config['player']['3_bet_x1_y1']   # (660, 315)
-        # self.player4_bet_x1_y1 = ocr_config['player']['4_bet_x1_y1']   # (945, 360)
-        # self.player_bet_w_h = ocr_config['player']['bet_w_h']   # (175, 35)
-        # self.player_active_color = ocr_config['player']['active_color']   # (253, 253, 253)
-        #
-        # # 位置
-        # self.btn_color = ocr_config['btn']['color']   # (239, 195, 44)  # D标记颜色
-        # self.btn_x_y_0 = ocr_config['btn']['x_y_0']   # (648, 657)  # 我
-        # self.btn_x_y_1 = ocr_config['btn']['x_y_1']   # (392, 634)  # 左下
-        # self.btn_x_y_2 = ocr_config['btn']['x_y_2']   # (392, 353)  # 左上
-        # self.btn_x_y_3 = ocr_config['btn']['x_y_3']   # (672, 303)  # 上
-        # self.btn_x_y_4 = ocr_config['btn']['x_y_4']   # (1057, 353)  # 右上
-        # self.btn_x_y_5 = ocr_config['btn']['x_y_5']   # (1057, 634)  # 右下
-        #
-        # # 底池、余额、跟注金额
-        # self.pool_region = ocr_config['amount']['pool']   # (729, 368, 817, 398)
-        # self.balance_region = ocr_config['amount']['balance']   # (658, 832, 812, 872)
-        # self.call_amount_region = ocr_config['amount']['call']   # (1047, 856, 1138, 886)
 
     def fetch_state(self, image):
         self.image = image

@@ -1,12 +1,11 @@
-from models.base import BaseModel, db
+from models.base_model import BaseModel, db
 from flask_peewee.db import CharField, IntegerField, DateTimeField, AutoField, FloatField, TextField
 from datetime import datetime
 import json
 import copy
-from poker.config import SB, BB
+from config import SB, BB
 from decimal import Decimal
-from poker.models.card import HandScore
-from poker.card import order_cards
+from models.card import HandScore
 
 
 class GameState(BaseModel):

@@ -1,5 +1,5 @@
 from treys import Evaluator, Card, Deck
-from models.base import BaseModel, db
+from models.base_model import BaseModel, db
 from flask_peewee.db import CharField, AutoField, FloatField
 from itertools import combinations
 import random
