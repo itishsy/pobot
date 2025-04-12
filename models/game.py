@@ -34,13 +34,35 @@ class GameState(BaseModel):
     reward = FloatField(null=True)
 
     def get_player(self, name):
-        for player in self.active_players():
+        for player in self.players:
             if player.name == name:
                 return player
 
+    def to_dict(self):
+        pls = []
+        for p in self.players:
+            pls.append(p.to_dict())
+        return {
+            'code': self.code,
+            'hand': self.hand,
+            'position': self.position,
+            'stage': self.stage,
+            'stack': self.stack,
+            'pot': self.pot,
+            'board': self.board,
+            'call': self.call,
+            'action': self.action,
+            'amount': self.amount,
+            'strength': self.strength,
+            'win_rate': self.win_rate,
+            'call_ev': self.call_ev,
+            'raise_ev': self.raise_ev,
+            'bet_ev': self.bet_ev,
+            'players': pls
+        }
+
     def active_players(self):
-        active_players = [Player(p['name'], p['position'], p['stack'], p['action'], 1, p['amount'])
-                          for p in self.players if p['active'] == 1]
+        active_players = [p for p in self.players if p.active == 1]
         return sorted(active_players, key=lambda x: x.position)
 
 

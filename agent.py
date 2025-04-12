@@ -1,3 +1,4 @@
+import json
 import time
 from datetime import datetime
 
@@ -38,8 +39,17 @@ class GameAgent:
             # time.sleep(2)
             # print('sleep 2')
 
+    def test_state(self):
+        from PIL import Image
+        image = Image.open('image/0412204233.jpg')
+        state = self.ocr.fetch_state(image)
+        self.game.add_state(state)
+        print(state.to_dict())
+
 
 if __name__ == '__main__':
     ga = GameAgent()
-    ga.start()
+    # ga.start()
+    ga.test_state()
+
 
