@@ -1,9 +1,10 @@
 import ddddocr
 import io
 from PIL import Image
+import json
 
-from models.game import State, Player
-from config import SB, BB, process_config
+from models.game import GameState, Player
+from config import SB, BB, ranks, process_config
 
 
 def match_color(color1, color2, diff=100):
@@ -31,6 +32,7 @@ def ordered_hand(hand):
     else:
         return [hand[1], hand[0]]
 
+
 class PokerOcr:
 
     def __init__(self):
@@ -40,7 +42,7 @@ class PokerOcr:
 
     def fetch_state(self, image):
         self.image = image
-        stage = State()
+        stage = GameState()
         stage.hand = self.__hand()
         stage.board = self.__board()
         stage.stage = 0 if len(stage.board) == 0 else len(stage.board) - 2
@@ -48,14 +50,13 @@ class PokerOcr:
         stage.pot = self.__ocr_amt(self.ocr_config['amount']['pool'])
         stage.stack = self.__ocr_amt(self.ocr_config['amount']['balance'])
         # print('amount call', self.__ocr_txt(self.ocr_config['amount']['call']))
-        # print('amount call', self.__ocr_amt(self.ocr_config['amount']['call']))
         stage.call = self.__ocr_amt(self.ocr_config['amount']['call'])
         stage.players = self.__players()
         return stage
 
     def __ocr_txt(self, region):
         crop_image = self.image.crop(region)
-        crop_image.save('d:\\Huangsy\\sourcecode\\pobot\\poker\\cropped_image.png')
+        crop_image.save('cropped_image.png')
         image_bytes = io.BytesIO()
         crop_image.save(image_bytes, format='PNG')
         image_bytes = image_bytes.getvalue()
@@ -176,7 +177,7 @@ class PokerOcr:
             stack = self.__ocr_amt((x, y+h-5, x+w, y+h+h-5))
             amount = self.__ocr_amt((bx, by, bx+bw, by+bh))
             active = 1 if amount > 0 else contain_color(self.image.crop((x + 30, y + 5, x + w - 30, y + h - 10)),
-                                       self.ocr_config['player']['active_color'])
+                                                        self.ocr_config['player']['active_color'])
             position = (self_pos + i) % 6 if self_pos + i != 6 else 6
             if active:
                 if amount > 0:

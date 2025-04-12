@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from flask_peewee.db import MySQLDatabase, Model
+from flask_peewee.db import MySQLDatabase, Model, TextField
 import json
 import os
 
@@ -26,9 +26,18 @@ class BaseModel(Model):
         return json.dumps(r, ensure_ascii=False)
 
 
+# 自定义JSON序列化字段
+class JSONArrayField(TextField):
+    def db_value(self, value):
+        return json.dumps(value) if value else '[]'
+
+    def python_value(self, value):
+        return json.loads(value) if value else []
+
+
 if __name__ == '__main__':
     from models.game import Game, GameState
     from models.card import HandScore
 
     db.connect()
-    db.create_tables([Game, State, HandScore])
+    db.create_tables([Game, GameState, HandScore])

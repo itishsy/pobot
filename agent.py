@@ -18,6 +18,7 @@ class GameAgent:
 
     def start(self):
         while True:
+            image = None
             try:
                 image = self.rpa.shot_win()
                 if image:
@@ -31,8 +32,9 @@ class GameAgent:
                     # print('sleep 3')
             except Exception as e:
                 print('[Error]', str(e))
-                self.rpa.shot().save('image/{}.jpg'.format(datetime.now().strftime('%m%d%H%M%S')))
-                self.rpa.do_action('fold', raised=0)
+                if image:
+                    image.save('image/{}.jpg'.format(datetime.now().strftime('%m%d%H%M%S')))
+                    self.rpa.do_action('fold', raised=0)
             # time.sleep(2)
             # print('sleep 2')
 
