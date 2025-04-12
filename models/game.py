@@ -24,7 +24,6 @@ class GameState(BaseModel):
     win_rate = FloatField(null=True)
     call_ev = FloatField(null=True)
     raise_ev = FloatField(null=True)
-    bet_ev = FloatField(null=True)
     players = JSONArrayField(null=True)
     player1 = TextField(null=True)
     player2 = TextField(null=True)
@@ -57,7 +56,6 @@ class GameState(BaseModel):
             'win_rate': self.win_rate,
             'call_ev': self.call_ev,
             'raise_ev': self.raise_ev,
-            'bet_ev': self.bet_ev,
             'players': pls
         }
 

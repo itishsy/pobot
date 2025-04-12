@@ -44,7 +44,9 @@ class GameAgent:
         image = Image.open('image/0412204233.jpg')
         state = self.ocr.fetch_state(image)
         self.game.add_state(state)
+        action, raised = self.ai.eval_action(self.game)
         print(state.to_dict())
+        print(action, raised)
 
 
 if __name__ == '__main__':

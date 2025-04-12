@@ -24,146 +24,101 @@ class StrategicAnalyst:
     def calculate_action(self, game):
         self.game = game
         self.state = game.states[-1]
-        self.__win_rate()
-        self.__calculate_ev()
-        bet_size = 0
 
         call = self.state.call
-        call_ev = self.state.call_ev
-        raise_ev = self.state.raise_ev
-        bet_ev = self.state.bet_ev
-        win_rate = self.state.win_rate
+        win_rate = self.__win_rate()
+        call_ev = round((win_rate * self.state.pot - (1 - win_rate) * call), 4)
+        self.state.call_ev = call_ev
+
+        best_raise = self.__raise_ev()
+        raise_ratio, raise_amount, raise_ev = best_raise['ratio'], best_raise['amount'], best_raise['ev']
+        self.state.raise_ev = raise_ev
 
         if call > 0:
-            if call_ev < 0:
-                return 'fold', 0
-            elif raise_ev > 0:
-                if random.random() > win_rate:
-                    return 'raise', random.randint(1, 3)
-                else:
-                    return 'check', 0
+            if call_ev < SB:
+                self.state.action, self.state.bet = 'fold', 0
+            elif raise_ev > 0 and random.random() < win_rate > random.uniform(0.65, 0.75):
+                # 胜率较大的情况下，大概1/4机会加注
+                self.state.action, self.state.bet = 'raise', random.randint(1, 3)
             else:
-                return 'call', 0
+                self.state.action, self.state.bet = 'call', 0
         else:
-            if bet_ev > 0 and random.random() > win_rate:
-                return 'bet', random.randint(1, 3)
+            if raise_ev > 0 and random.uniform(0.33, 0.99) < win_rate > random.uniform(0.6, 0.75):
+                # 胜率较大的情况下，大概1/2机会主动出击
+                self.state.action, self.state.bet = 'bet', random.randint(1, 3)
             else:
-                return 'check', 0
+                self.state.action, self.state.bet = 'check', 0
+
         print('hand_strength:{},win_rate{},call_ev:{},raise_ev:{},action:{},bet:{}'.format(
             self.state.strength, self.state.win_rate,
             self.state.call_ev, self.state.raise_ev, self.state.action, self.state.bet))
         return self.state.action, self.state.bet
-
-        # if self.state.call > 0:
-        #     call_ev = round(self.state.pot * win_rate - (1 - win_rate) * self.state.call, 4)
-        #     print('strength:{}'.format(self.state.strength), 'win_rate:{}'.format(win_rate), 'call_ev:{}'.format(call_ev))
-        #     if call_ev < 0 or win_rate < 0.33:
-        #         return 'fold', 0
-        #     elif call_ev > 0:
-        #         if win_rate > 0.7:
-        #             return ('call', 0) if random.randint(1, 100) > (win_rate * 100) else ('raise', random.randint(1, 3))
-        #         else:
-        #             return ('call', 0) if random.randint(1, 100) < (win_rate * 100) else ('raise', random.randint(0, 1))
-        # else:
-        #     print('strength:{}'.format(self.state.strength), 'win_rate:{}'.format(win_rate), 'pot:{}'.format(self.state.pot))
-        #     if win_rate < 0.45:
-        #         return 'check', 0
-        #     elif win_rate > 0.7:
-        #         return ('check', 0) if random.randint(1, 100) > (win_rate * 100) else ('raise', random.randint(1, 5))
-        #     else:
-        #         return ('check', 0) if random.randint(50, 100) > (win_rate * 100) else ('raise', random.randint(1, 3))
 
     def __win_rate(self):
         """根據手牌強度，計算獲勝概率
         #  贏率降低的條件有：入池人數越多、牌面越濕、玩家存在c-bet，check-raise等行為
         """
         stage = self.state.stage
-        adjust_rate = 0.9
         if stage == 0:
             self.state.strength = HandScore.get_score(self.state.hand[0], self.state.hand[1])
             self.__pre_flop_ranges()
-            adjust_rate = self.__pre_flop_adjust_rate()
+            factor = self.__pre_flop_adjust_factor()
         else:
-            self.state.strength = eval_strength(self.state.hand, self.state.board, self.game.opponent_pre_flop_ranges)
-            if stage == 1:
-                adjust_rate = self.__flop_adjust_rate()
-            elif stage == 2:
-                adjust_rate = self.__flop_adjust_rate()
-            elif stage == 3:
-                adjust_rate = self.__flop_adjust_rate()
-        self.state.win_rate = round(self.state.strength * adjust_rate, 4)
+            self.state.strength = eval_strength(self.state.hand, self.state.board, self.game.opponent_ranges)
+            factor = self.__aft_flop_adjust_factor()
+        win_rate = round(self.state.strength * factor, 4)
+        self.state.win_rate = win_rate
+        return win_rate
 
-    def __pre_flop_adjust_rate(self):
+    def __pre_flop_adjust_factor(self):
         """ 翻牌前胜率调节系数
-            # 相关变量：底池大小
+            factor1：底池大小，底池越大，玩家手牌强度越大，赢率降低
+            factor2: 入池人数，入池人数越多，赢率降低
         """
         pot = self.state.pot
         strength = self.state.strength
         p_level = 0 if pot < 5 * BB else 1 if pot < 20 * BB else 2
+        p_numbers = len(self.state.players)
         if strength > 0.8:
-            adjust_rate = 1.2 if p_level == 1 else 1.1 if p_level == 2 else 1
+            # 绝对强牌
+            factor1 = 1.2 if p_level == 1 else 1.1 if p_level == 2 else 1
+            factor2 = 1.1 if p_numbers < 3 else 0.9 if p_numbers > 3 else 1
         elif strength > 0.65:
-            adjust_rate = 0.9 if p_level == 1 else 0.8 if p_level == 2 else 1
+            # 中强牌
+            factor1 = 0.9 if p_level == 1 else 0.8 if p_level == 2 else 1
+            factor2 = max(p_numbers*0.95, 0.85)
+        elif strength > 0.5:
+            # 一般牌
+            factor1 = 0.9 if p_level == 1 else 0.75 if p_level == 2 else 1
+            factor2 = min(p_numbers*0.9, 0.8)
         else:
-            adjust_rate = 0.8 if p_level == 1 else 0.7 if p_level == 2 else 1
-        return adjust_rate
+            # 弱牌
+            factor1 = 0.8 if p_level == 1 else 0.7 if p_level == 2 else 1
+            factor2 = min(p_numbers*0.85, 0.75)
+        return round(factor1 * factor2, 2)
 
-    def __flop_adjust_rate(self):
-        """ 翻牌后胜率调节系数
-            # 相关变量：玩家行为、牌面湿润度、入池人数
+    def __aft_flop_adjust_factor(self):
+        """ 翻牌后调节系数
+            factor1：玩家下注尺度。下注尺度越大，成牌概率越大，赢率降低
+            factor2：牌面湿润度。 牌面越湿润，难度越大，赢率降低
+            factor3：玩家下注行为。 玩家持续下注，有强牌概率越大，赢率降低
         """
-        adjust_rate = 0.95
-        h_level = 1.1 if no_raise() else 1 if no_cbet_tbet() else 0.9
-        w_level = 1 if no_pair() else 0.9 if one_pair() else 0.8
-        if is_nuts():
-            adjust_rate = 2
+        is_c_bet = self._is_c_bet()    # 持续下注
+        is_b_bet = self._is_b_bet()    # 大注
+        is_flop_raise = self._is_flop_raise()   # 翻牌后加注
+        is_nuts = self._is_nuts()     # 拿到坚果
+        wet_level = 1
+
+        if is_nuts:
+            return 2
         else:
-            adjust_rate = h_level * w_level
-        return adjust_rate
-
-    def __turn_win_rate(self):
-        """ 转牌胜率调节系数
-            # 相关变量：玩家行为、牌面湿润度、入池人数、成牌概率
-        """
-        adjust_rate = 0.95
-        h_level = 1.1 if no_raise() else 1 if no_cbet_tbet() else 0.9
-        w_level = 1 if no_pair() else 0.9 if one_pair() else 0.8
-        if is_nuts():
-            adjust_rate = 2
-        else:
-            adjust_rate = h_level * w_level
-        return adjust_rate
-
-    def __river_win_rate(self):
-        """ 河牌胜率调节系数
-            # 相关变量：玩家行为、牌面湿润度、入池人数、成牌概率
-        """
-        adjust_rate = 0.9
-        h_level = 1.1 if no_raise() else 1 if no_cbet_tbet() else 0.9
-        w_level = 1 if no_pair() else 0.9 if one_pair() else 0.8
-        if is_nuts():
-            adjust_rate = 2
-        else:
-            adjust_rate = h_level * w_level
-        return adjust_rate
-
-    def __flop_action(self):
-        # 风险调整系数
-        bankroll_factor = min(self.state.stack / 100 * BB, 1.5)
-        # 特殊情况处理
-        if self.state.call == 0:
-            final_ev['check'] = ev_matrix['call']
-            # del final_ev['call']
-
-        # 选择最优动作
-        best_action = max(final_ev, key=final_ev.get)
-
-        if best_action == 'raise' and win_rate > 0.60 and random.randint(1, 100) > (win_rate * 100):
-            raise_size = int(final_ev[best_action] / BB)
-            return 'raise', random.randint(0, min(raise_size, 5))
-        elif final_ev['call'] > 0 and win_rate > 0.5:
-            return 'call', 0
-        return 'fold' if self.state.call > 0 else 'check', 0
+            p_numbers = len(self.state.players)     # 入池人数
+            factor1 = 1 if p_numbers < 2 else 0.8 if p_numbers > 2 or self.state.stage > 1 else 0.9
+            factor2 = 0.9 if is_c_bet else 1
+            factor3 = 0.9 if is_b_bet else 1
+            factor4 = 0.9 if is_flop_raise else 1
+            factor5 = 0.9 if wet_level == 1 else 0.8 if wet_level == 2 else 1
+            return round(factor1 * factor2 * factor3 * factor4 * factor5, 2)
 
     def __pre_flop_ranges(self):
         """
@@ -210,38 +165,15 @@ class StrategicAnalyst:
                 min_score, max_score = 0.2, 0.9
         self.game.opponent_ranges = HandScore.get_ranges(min_score, max_score)
 
-    def __calculate_ev(self):
+    def __raise_ev(self):
         """计算各动作的期望值"""
-        ev_matrix = {}
-
         to_call = self.state.call
         pot = self.state.pot
         equity = self.state.win_rate
-        players = 1
-        for p in self.state.players:
-            players += 1 if p.active == 1 else 0
 
-        # 基本赔率计算
-        # pot_odds = to_call / pot + to_call
-        # implied_odds = 1.5  # 隐含赔率估计值
-
-        # 核心决策因子
-        decision_factor = round(
-            equity * self.position_weights[self.state.position] *
-            self.stage_factors[self.state.stage] *
-            (1 + 0.1 * (players - 2)), 4
-        )
-
-        # Fold EV（固定为0）
-        self.state.fold_ev = 0
-
-        # Check/Call EV
-        self.state.call_ev = round((equity * pot - (1 - equity) * to_call) * decision_factor, 4)
-
-        # Raise EV（动态计算最佳加注量）
-        raise_ranges = self._get_raise_ranges()
-        best_raise = {'amount': 0, 'ev': -np.inf}
-
+        # 加注量，相对底池占比
+        raise_ranges = [0.3, 0.5, 0.65, 0.8, 1.0, 1.25]
+        best_raise = {'amount': 0, 'ev': -1}
         for ratio in raise_ranges:
             raise_amount = pot * ratio
             fold_prob = self._estimate_fold_prob(raise_amount)
@@ -251,58 +183,26 @@ class StrategicAnalyst:
                         (1 - equity) * (to_call + raise_amount)), 4)
 
             if ev > best_raise['ev']:
-                best_raise = {'amount': raise_amount, 'ev': ev}
+                best_raise = {'ratio': ratio, 'amount': raise_amount, 'ev': ev}
 
-        self.state.raise_ev = best_raise
-
-    def _get_raise_ranges(self):
-        """动态生成加注范围"""
-        # 基础加注尺度
-        if self.state.stage == 0:
-            base_ranges = [0.5, 0.75, 1.0]
-        elif 0 < self.state.stage < 3:
-            base_ranges = [0.67, 0.8, 1.0]
-        else:  # river
-            base_ranges = [0.5, 0.75, 1.0, 1.25]
-
-        raise_times = 0
-        active_players = [p.name if p.active == 1 else None for p in self.state.players]
-        for ste in self.game.states:
-            for p in ste.players:
-                if p.name in active_players and p.action == 'raise' and p.amount > 2 * BB:
-                    raise_times += 1
-
-        # 根据对手倾向调整
-        # if params['vpip'] > 0.35:
-        if raise_times > 3:
-            base_ranges = [round(r * 0.8, 2) for r in base_ranges]
-        if raise_times < 2:
-            base_ranges = [round(r * 1.2, 2) for r in base_ranges]
-        return base_ranges
+        return best_raise
 
     def _estimate_fold_prob(self, raise_amount):
-        """估计对手弃牌概率"""
-        base_prob = 0.3
+        """玩家弃牌概率"""
         # 加注量影响
-        base_prob += min((raise_amount / self.state.pot) * 0.2, 0.4)
-
-        raise_times = 0
-        active_players = [p.name if p.active == 1 else None for p in self.state.players]
-        for ste in self.game.states:
-            for p in ste.players:
-                if p.name in active_players and p.action == 'raise' and p.amount > 2 * BB:
-                    raise_times += 1
-
-        # 对手倾向调整
-        # if raise_times > 2:
-        #     base_prob = base_prob * 0.9
-        # if raise_times < 2:
-        #     base_prob = base_prob * 1.1
-        if len(active_players) > 1 or raise_times > 1:
-            return 0.1
+        base_prob = min((raise_amount / self.state.pot) * 0.2, 0.3)
+        if self.state.stage == 0:
+            active_numbers = len(self.state.players)
+            fold_prob = round(base_prob / active_numbers, 2)
         else:
-            return 0.2
-        # return float(np.clip(base_prob, 0.1, 0.8))
+            raise_times = 0
+            active_players = [p.name if p.active == 1 else None for p in self.state.players]
+            for ste in self.game.states:
+                for p in ste.players:
+                    if p.name in active_players and p.action == 'raise' and p.amount > 2 * BB:
+                        raise_times += 1
+            fold_prob = round(base_prob / raise_times, 2)
+        return fold_prob
 
     def _player_analyze(self):
         active_numbers = 1  # 入池人数
@@ -316,5 +216,30 @@ class StrategicAnalyst:
         if len(self.game.states) > 1:
             pre_state = self.game.states[-2]
 
+    def _is_c_bet(self):
+        for sta in self.game.states:
+            pls = sta.players
+            # todo
 
+        return False
+
+    def _is_b_bet(self):
+        pot = self.state.pot
+        for sta in self.game.states:
+            pls = sta.players
+            # todo
+
+        return False
+
+    def _is_flop_raise(self):
+        pot = self.state.pot
+        for sta in self.game.states:
+            pls = sta.players
+            # todo
+
+        return False
+
+    def _is_nuts(self):
+
+        return False
 
