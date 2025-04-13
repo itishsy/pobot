@@ -103,9 +103,9 @@ class StrategicAnalyst:
             factor2：牌面湿润度。 牌面越湿润，难度越大，赢率降低
             factor3：玩家下注行为。 玩家持续下注，有强牌概率越大，赢率降低
         """
-        is_c_bet = self._is_c_bet()    # 持续下注
-        is_b_bet = self._is_b_bet()    # 大注
-        is_flop_raise = self._is_flop_raise()   # 翻牌后加注
+        c_bet_level = self._c_bet_level()    # 持续下注
+        b_bet_level = self._b_bet_level()    # 大注
+        raise_level = self.flop_raise_level()   # 翻牌后加注
         is_nuts = self._is_nuts()     # 拿到坚果
         wet_level = 1
 
@@ -113,12 +113,21 @@ class StrategicAnalyst:
             return 2
         else:
             p_numbers = len(self.state.players)     # 入池人数
-            factor1 = 1 if p_numbers < 2 else 0.8 if p_numbers > 2 or self.state.stage > 1 else 0.9
-            factor2 = 0.9 if is_c_bet else 1
-            factor3 = 0.9 if is_b_bet else 1
-            factor4 = 0.9 if is_flop_raise else 1
-            factor5 = 0.9 if wet_level == 1 else 0.8 if wet_level == 2 else 1
+            factor1 = self._three_level_factor(p_numbers-1)
+            factor2 = self._three_level_factor(c_bet_level)
+            factor3 = self._three_level_factor(b_bet_level)
+            factor4 = self._three_level_factor(raise_level)
+            factor5 = self._three_level_factor(wet_level)
             return round(factor1 * factor2 * factor3 * factor4 * factor5, 2)
+
+    @staticmethod
+    def _three_level_factor(level):
+        if level == 0:
+            return random.uniform(0.95, 1.05)
+        elif level == 1:
+            return random.uniform(0.9, 1.0)
+        else:
+            return random.uniform(0.8, 0.9)
 
     def __pre_flop_ranges(self):
         """
@@ -204,40 +213,49 @@ class StrategicAnalyst:
             fold_prob = round(base_prob / raise_times, 2)
         return fold_prob
 
-    def _player_analyze(self):
-        active_numbers = 1  # 入池人数
-        raise_times = 0  # 加注次数
-        c_bet_times = 0  # 持续下注次数
-        for player in self.state.players:
-            if player.active == 1:
-                active_numbers += 1
-                if player.action == 'raise':
-                    raise_times += 1
-        if len(self.game.states) > 1:
-            pre_state = self.game.states[-2]
-
-    def _is_c_bet(self):
+    def _c_bet_level(self):
+        c_bet_level = 0
+        c_bet_players = []
         for sta in self.game.states:
-            pls = sta.players
-            # todo
+            for p in sta.players:
+                if p.action in ['bet', 'raise']:
+                    b_flag = True
+                    for bp in c_bet_players:
+                        if bp['name'] == p.name:
+                            b_flag = False
+                            bp['level'] = bp['level'] + 1
+                    if b_flag:
+                        c_bet_players.append({'name': p.name, 'level': 1})
+                else:
+                    for bp in c_bet_players:
+                        if bp['name'] == p.name:
+                            bp['level'] = bp['level'] - 1
+        for bp in c_bet_players:
+            if bp['level'] > 1 and c_bet_level != 2:
+                c_bet_level = 2
+            elif bp['level'] > 0:
+                c_bet_level = 1
+        return c_bet_level
 
-        return False
-
-    def _is_b_bet(self):
-        pot = self.state.pot
+    def _b_bet_level(self):
+        b_bet_level = 0
         for sta in self.game.states:
-            pls = sta.players
-            # todo
+            if sta.stage > 0:
+                for p in sta.players:
+                    if p.active == 1 and b_bet_level < 1 and p.amount > sta.pot * 0.75:
+                        b_bet_level = 1
+                    elif p.active == 1 and p.amount > sta.pot * 1.25:
+                        b_bet_level = 2
+        return b_bet_level
 
-        return False
-
-    def _is_flop_raise(self):
-        pot = self.state.pot
+    def flop_raise_level(self):
+        raise_level = 0
         for sta in self.game.states:
-            pls = sta.players
-            # todo
-
-        return False
+            if sta.stage > 0:
+                for p in sta.players:
+                    if p.active == 1 and p.action == 'raise':
+                        raise_level += 1
+        return raise_level
 
     def _is_nuts(self):
 
