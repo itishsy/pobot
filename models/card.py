@@ -135,6 +135,81 @@ def wet_board(board):
 
     return min(wetness, 1.0)  # 限制在0-1范围
 
+def calculate_wetness(community_cards):
+    """
+    根据当前公共牌计算湿润度(0-2)
+    返回值：浮点数，保留一位小数
+    """
+    stage = len(community_cards)
+    
+    # 工具函数：将牌转换为数值
+    def card_value(card):
+        rank = card[0]
+        return '23456789TJQKA'.index(rank)
+    
+    # 工具函数：判断是否存在顺子可能性
+    def has_straight_draw(sorted_ranks, num_cards):
+        # 生成所有可能的补牌组合
+        unique_ranks = sorted(list(set(sorted_ranks)))
+        straight_draws = []
+        
+        # 遍历所有可能的顺子组合
+        for i in range(len(unique_ranks) - num_cards + 1):
+            subset = unique_ranks[i:i+num_cards]
+            gap = subset[-1] - subset[0]
+            
+            # 开放式顺子听牌
+            if gap == num_cards:
+                return 1.0
+            # 两端顺子听牌
+            elif gap == num_cards + 1:
+                return 0.8
+            # 中间缺口听牌
+            elif gap <= num_cards + 2:
+                return 0.5
+        return 0.0
+
+    # 公共牌数据准备
+    suits = [c[1] for c in community_cards]
+    ranks = sorted([card_value(c) for c in community_cards])
+    
+    # 1. 同花潜力计算
+    suit_counts = {}
+    for s in suits:
+        suit_counts[s] = suit_counts.get(s, 0) + 1
+    max_suit = max(suit_counts.values(), default=0)
+    
+    # 2. 顺子潜力计算
+    straight_potential = has_straight_draw(ranks, len(community_cards))
+    
+    # 分阶段计算
+    if stage == 3:  # 翻牌圈
+        flush_potential = 1.0 if max_suit >= 2 else 0.0
+        return round(min(flush_potential + straight_potential, 2.0), 1)
+    
+    elif stage == 4:  # 转牌圈
+        flush_potential = 1.0 if max_suit >= 3 else 0.5 if max_suit >= 2 else 0.0
+        return round(min(flush_potential + straight_potential, 2.0), 1)
+    
+    elif stage == 5:  # 河牌圈
+        # 实际成牌判断
+        flush_exists = 1.0 if max_suit >= 3 else 0.0
+        unique_ranks = sorted(list(set(ranks)))
+        straight_exists = 0.0
+        
+        # 检查标准顺子
+        if len(unique_ranks) >= 5:
+            for i in range(len(unique_ranks)-4):
+                if unique_ranks[i+4] - unique_ranks[i] == 4:
+                    straight_exists = 1.0
+                    break
+            # 检查A-2-3-4-5特殊顺子
+            if not straight_exists and set(unique_ranks) >= {0,1,2,3,12}:
+                straight_exists = 1.0
+                
+        return round(flush_exists + straight_exists, 1)
+    
+    return 0.0
 
 def refresh_hand_score():
     # 定义所有牌面
