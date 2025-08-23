@@ -325,18 +325,23 @@ class PokerGame:
         sb_player = self.players[sb_pos]
         bb_player = self.players[bb_pos]
         
-        sb_player.chips -= min(self.small_blind, sb_player.chips)
-        sb_player.bet_this_round = min(self.small_blind, sb_player.chips)
+        # 收取小盲注
+        sb_amount = min(self.small_blind, sb_player.chips)
+        sb_player.chips -= sb_amount
+        sb_player.bet_this_round = sb_amount
         if sb_player.chips == 0:
             sb_player.all_in = True
         
-        bb_player.chips -= min(self.big_blind, bb_player.chips)
-        bb_player.bet_this_round = min(self.big_blind, bb_player.chips)
+        # 收取大盲注
+        bb_amount = min(self.big_blind, bb_player.chips)
+        bb_player.chips -= bb_amount
+        bb_player.bet_this_round = bb_amount
         if bb_player.chips == 0:
             bb_player.all_in = True
         
-        self.pot += sb_player.bet_this_round + bb_player.bet_this_round
-        self.current_bet = bb_player.bet_this_round
+        # 更新底池和当前下注
+        self.pot = sb_amount + bb_amount
+        self.current_bet = bb_amount
     
     def get_active_players(self):
         return [p for p in self.players if not p.folded]
@@ -356,6 +361,7 @@ class PokerGame:
         return True
     
     def reset_for_new_stage(self):
+        # 重置下注状态，不收集底池（已在betting_round结束时收集）
         self.current_bet = 0
         self.is_new_stage = True
 
@@ -414,7 +420,7 @@ class PokerGame:
             player.chips -= actual_call
             player.bet_this_round += actual_call
             player.total_bet += actual_call  # Update total bet
-            self.pot += actual_call
+            # 不直接加到self.pot，等collect_bets时统一处理
             
             if player.chips == 0:
                 player.all_in = True
@@ -443,7 +449,7 @@ class PokerGame:
             player.chips -= total_needed
             player.bet_this_round += total_needed
             player.total_bet += total_needed  # Update total bet
-            self.pot += total_needed
+            # 不直接加到self.pot，等collect_bets时统一处理
             self.current_bet = player.bet_this_round
             
             if player.chips == 0:
@@ -456,9 +462,17 @@ class PokerGame:
     
     def collect_bets(self):
         # Move all player bets to the main pot
+        total_bets = 0
         for player in self.players:
-            self.pot += player.bet_this_round
+            total_bets += player.bet_this_round
             player.bet_this_round = 0
+        
+        # 更新底池
+        self.pot += total_bets
+        
+
+        
+
     
     
     def print_game_state(self):
@@ -493,7 +507,6 @@ class PokerGame:
     
     def play_round(self):
         # Pre-Flop
-        self.reset_for_new_stage()
         self.deal_hole_cards()
         self.post_blinds()
         self.betting_round()
@@ -575,10 +588,21 @@ class PokerGame:
                 player.print_standard_features(features)
                 
                 valid_actions = self.get_valid_actions(player)
-                if self.current_bet == 0:
-                    print("Actions: 0-Check, 1-Call, 2-Raise")
-                else:
-                    print("Actions: 0-Fold, 1-Call, 2-Raise")
+                
+                # 根据可用操作动态显示操作选项
+                action_descriptions = []
+                for action in valid_actions:
+                    if action == 0:
+                        if self.current_bet == 0:
+                            action_descriptions.append("0-Check")
+                        else:
+                            action_descriptions.append("0-Fold")
+                    elif action == 1:
+                        action_descriptions.append("1-Call")
+                    elif action == 2:
+                        action_descriptions.append("2-Raise")
+                
+                print(f"Actions: {' | '.join(action_descriptions)}")
 
                 while True:
                     try:
@@ -614,7 +638,13 @@ class PokerGame:
             
             first_to_act = False
         
-        self.collect_bets()
+        # 在每个下注轮次结束时收集底池
+        if self.round_name == "Pre-Flop":
+            # Preflop阶段结束时收集底池
+            self.collect_bets()
+        else:
+            # 其他阶段结束时收集底池
+            self.collect_bets()
 
 def main():
     print("Texas Hold'em Poker - 6 Player Game")
