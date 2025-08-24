@@ -16,20 +16,20 @@ class Player:
         self.bet_this_round = 0
         self.total_bet = 0  # Total bet in this hand
         self.action = None
-        self.position = 0  # 玩家位置
+        self.position = 0  # Player position
     
     def __str__(self):
         return f"{self.name} (${self.chips})"
     
     def calculate_hand_strength(self, community_cards):
-        """计算手牌强度 (0-100)"""
+        """Calculate hand strength (0-100)"""
         if not self.hand or len(self.hand) < 2:
             return 0
         
-        # 使用更复杂的牌力计算
+        # Use more complex hand strength calculation
         hand_value = 0
         
-        # 基础点数计算
+        # Basic rank calculation
         for card in self.hand:
             rank = card[:-1]
             if rank == 'A':
@@ -45,15 +45,15 @@ class Player:
             else:
                 hand_value += int(rank)
         
-        # 同花奖励
+        # Suited bonus
         if len(self.hand) == 2 and self.hand[0][-1] == self.hand[1][-1]:
             hand_value += 10
         
-        # 对子奖励
+        # Pair bonus
         if len(self.hand) == 2 and self.hand[0][:-1] == self.hand[1][:-1]:
             hand_value += 20
         
-        # 连牌奖励
+        # Connected cards bonus
         if len(self.hand) == 2:
             rank1 = self.hand[0][:-1]
             rank2 = self.hand[1][:-1]
@@ -64,73 +64,73 @@ class Player:
             elif rank1 == 'Q' and rank2 == 'J':
                 hand_value += 10
         
-        # 标准化到0-100范围
+        # Normalize to 0-100 range
         return min(hand_value * 2, 100)
     
     def get_standard_features(self, game_state):
-        """生成标准的GameFeature特征"""
+        """Generate standard GameFeature features"""
         features = {}
         
-        # 1. 阶段 (0: preflop, 1: flop, 2: turn, 3: river)
+        # 1. Stage (0: preflop, 1: flop, 2: turn, 3: river)
         stage_map = {"Pre-Flop": 0, "Flop": 1, "Turn": 2, "River": 3}
         features['stage'] = stage_map.get(game_state['round_name'], 0)
         
-        # 2. 位置 (0: 先手, 1: 中间, 2: 后手)
+        # 2. Position (0: early, 1: middle, 2: late)
         relative_pos = (game_state['player_index'] - game_state['dealer_pos']) % game_state['total_players']
         if relative_pos <= 1:
-            features['pos'] = 0  # 先手
+            features['pos'] = 0  # Early position
         elif relative_pos >= game_state['total_players'] - 2:
-            features['pos'] = 2  # 后手
+            features['pos'] = 2  # Late position
         else:
-            features['pos'] = 1  # 中间
+            features['pos'] = 1  # Middle position
         
-        # 3. 底池大小（BB）
+        # 3. Pot size (BB)
         features['pots'] = round(game_state['pot'] / game_state['big_blind'], 2)
         
-        # 4. 翻牌前底池大小（BB）
+        # 4. Preflop pot size (BB)
         if game_state['round_name'] == "Pre-Flop":
             features['ppots'] = features['pots']
         else:
-            # 这里简化处理，实际应该记录preflop的底池
-            features['ppots'] = round(3 / game_state['big_blind'], 2)  # 盲注底池
+            # Simplified handling, should record preflop pot
+            features['ppots'] = round(3 / game_state['big_blind'], 2)  # Blind pot
         
-        # 5. 跟注大小（BB）
+        # 5. Call amount (BB)
         call_amount = game_state['current_bet'] - self.bet_this_round
         features['calls'] = round(call_amount / game_state['big_blind'], 2)
         
-        # 6. 玩家数
+        # 6. Player count
         features['players'] = game_state['active_players_count']
         
-        # 7. 持续下注 (简化实现)
-        features['c_bet'] = 0  # 需要更复杂的游戏状态跟踪
+        # 7. Continuation bet (simplified implementation)
+        features['c_bet'] = 0  # Need more complex game state tracking
         
-        # 8. 持续下注次数 (简化实现)
+        # 8. Continuation bet history (simplified implementation)
         features['c_bet_his'] = 0
         
-        # 9. 过牌加注 (简化实现)
+        # 9. Check-raise (simplified implementation)
         features['c_raise'] = 0
         
-        # 10. 过牌加注次数 (简化实现)
+        # 10. Check-raise history (simplified implementation)
         features['c_raise_his'] = 0
         
-        # 11. 大额下注
+        # 11. Big bet
         if call_amount > 0:
             if call_amount > game_state['pot'] * 0.8:
-                features['b_bet'] = 2  # 超大额下注
+                features['b_bet'] = 2  # Very big bet
             elif call_amount > game_state['pot'] * 0.5:
-                features['b_bet'] = 1  # 大额下注
+                features['b_bet'] = 1  # Big bet
             else:
                 features['b_bet'] = 0
         else:
             features['b_bet'] = 0
         
-        # 12. 大额下注次数 (简化实现)
+        # 12. Big bet history (simplified implementation)
         features['b_bet_his'] = 0
         
-        # 13. 手牌强度 (0-100)
+        # 13. Hand strength (0-100)
         features['strength'] = self.calculate_hand_strength(game_state['community_cards'])
         
-        # 14-17. 公共牌湿润度特征
+        # 14-17. Community card wetness features
         wetness = self._calculate_wetness(game_state['community_cards'])
         features['wet_high'] = wetness['high']
         features['wet_pair'] = wetness['pair']
@@ -140,11 +140,11 @@ class Player:
         return features
     
     def _calculate_wetness(self, community_cards):
-        """计算公共牌湿润度"""
+        """Calculate community card wetness"""
         if not community_cards:
             return {'high': 0, 'pair': 0, 'straight': 0, 'flush': 0}
         
-        # 高张计算
+        # High card calculation
         high_cards = 0
         for card in community_cards:
             rank = card[:-1]
@@ -158,7 +158,7 @@ class Player:
         else:
             wet_high = 0
         
-        # 对子计算
+        # Pair calculation
         ranks = [card[:-1] for card in community_cards]
         rank_counts = {}
         for rank in ranks:
@@ -166,16 +166,16 @@ class Player:
         
         pairs = [r for r, c in rank_counts.items() if c >= 2]
         if len(pairs) >= 2:
-            wet_pair = 2  # 两对或三条
+            wet_pair = 2  # Two pair or three of a kind
         elif len(pairs) == 1:
-            wet_pair = 1  # 一对
+            wet_pair = 1  # One pair
         else:
             wet_pair = 0
         
-        # 顺子计算 (简化)
+        # Straight calculation (simplified)
         wet_straight = 0
         if len(community_cards) >= 3:
-            # 检查是否有连牌
+            # Check for connected cards
             numeric_ranks = []
             for rank in ranks:
                 if rank == 'A':
@@ -197,7 +197,7 @@ class Player:
                     wet_straight = 1
                     break
         
-        # 同花计算
+        # Flush calculation
         suits = [card[-1] for card in community_cards]
         suit_counts = {}
         for suit in suits:
@@ -219,25 +219,25 @@ class Player:
         }
     
     def print_standard_features(self, features):
-        """打印标准特征"""
-        print(f"\n🎯 {self.name} 的标准特征分析:")
-        print(f"   📊 阶段: {features['stage']} ({self._get_stage_name(features['stage'])})")
-        print(f"   🎭 位置: {features['pos']} ({self._get_position_name(features['pos'])})")
-        print(f"   💰 底池大小: {features['pots']} BB")
-        print(f"   📍 翻牌前底池: {features['ppots']} BB")
-        print(f"   📞 跟注大小: {features['calls']} BB")
-        print(f"   👥 活跃玩家: {features['players']}")
-        print(f"   🎲 持续下注: {features['c_bet']}")
-        print(f"   📈 过牌加注: {features['c_raise']}")
-        print(f"   💎 大额下注: {features['b_bet']}")
-        print(f"   🃏 手牌强度: {features['strength']}/100")
-        print(f"   🌊 牌面湿润度:")
-        print(f"      - 高张: {features['wet_high']}")
-        print(f"      - 对子: {features['wet_pair']}")
-        print(f"      - 顺子: {features['wet_straight']}")
-        print(f"      - 同花: {features['wet_flush']}")
+        """Print standard features"""
+        print(f"\n🎯 {self.name}'s Standard Feature Analysis:")
+        print(f"   📊 Stage: {features['stage']} ({self._get_stage_name(features['stage'])})")
+        print(f"   🎭 Position: {features['pos']} ({self._get_position_name(features['pos'])})")
+        print(f"   💰 Pot Size: {features['pots']} BB")
+        print(f"   📍 Preflop Pot: {features['ppots']} BB")
+        print(f"   📞 Call Amount: {features['calls']} BB")
+        print(f"   👥 Active Players: {features['players']}")
+        print(f"   🎲 Continuation Bet: {features['c_bet']}")
+        print(f"   📈 Check-Raise: {features['c_raise']}")
+        print(f"   💎 Big Bet: {features['b_bet']}")
+        print(f"   🃏 Hand Strength: {features['strength']}/100")
+        print(f"   🌊 Board Wetness:")
+        print(f"      - High Cards: {features['wet_high']}")
+        print(f"      - Pairs: {features['wet_pair']}")
+        print(f"      - Straights: {features['wet_straight']}")
+        print(f"      - Flushes: {features['wet_flush']}")
         
-        # 决策建议
+        # Decision advice
         self.print_decision_advice_from_features(features)
     
     def _get_stage_name(self, stage):
@@ -245,49 +245,49 @@ class Player:
         return stage_names.get(stage, "Unknown")
     
     def _get_position_name(self, pos):
-        pos_names = {0: "先手", 1: "中间", 2: "后手"}
+        pos_names = {0: "Early", 1: "Middle", 2: "Late"}
         return pos_names.get(pos, "Unknown")
     
     def print_decision_advice_from_features(self, features):
-        """基于标准特征提供决策建议"""
-        print(f"   💡 决策建议:")
+        """Provide decision advice based on standard features"""
+        print(f"   💡 Decision Advice:")
         
-        # 基于手牌强度的建议
+        # Advice based on hand strength
         if features['strength'] >= 80:
-            print(f"      🚀 手牌极强，建议积极行动")
+            print(f"      🚀 Very strong hand, recommend aggressive action")
         elif features['strength'] >= 60:
-            print(f"      ✅ 手牌很强，可以跟注或加注")
+            print(f"      ✅ Strong hand, can call or raise")
         elif features['strength'] >= 40:
-            print(f"      🤔 手牌中等，谨慎行动")
+            print(f"      🤔 Medium hand, act cautiously")
         else:
-            print(f"      ⚠️  手牌较弱，建议弃牌")
+            print(f"      ⚠️  Weak hand, recommend folding")
         
-        # 基于位置的建议
+        # Advice based on position
         if features['pos'] == 2:
-            print(f"      🎯 后手位置，可以更激进")
+            print(f"      🎯 Late position, can be more aggressive")
         elif features['pos'] == 1:
-            print(f"      📍 中间位置，保持平衡")
+            print(f"      📍 Middle position, maintain balance")
         else:
-            print(f"      ⚡ 先手位置，需要谨慎")
+            print(f"      ⚡ Early position, need to be cautious")
         
-        # 基于底池赔率的建议
+        # Advice based on pot odds
         if features['calls'] > 0:
             pot_odds = features['pots'] / features['calls']
             if pot_odds >= 3:
-                print(f"      💎 底池赔率很好，值得跟注")
+                print(f"      💎 Great pot odds, worth calling")
             elif pot_odds >= 2:
-                print(f"      💰 底池赔率不错，考虑跟注")
+                print(f"      💰 Good pot odds, consider calling")
             else:
-                print(f"      ⚠️  底池赔率较差，谨慎跟注")
+                print(f"      ⚠️  Poor pot odds, call cautiously")
         
-        # 基于牌面湿润度的建议
+        # Advice based on board wetness
         wetness_score = features['wet_high'] + features['wet_pair'] + features['wet_straight'] + features['wet_flush']
         if wetness_score >= 4:
-            print(f"      🌊 牌面非常湿润，小心对手成牌")
+            print(f"      🌊 Board very wet, beware of opponent's made hands")
         elif wetness_score >= 2:
-            print(f"      💧 牌面较湿润，注意牌面变化")
+            print(f"      💧 Board somewhat wet, watch for board changes")
         else:
-            print(f"      🏜️ 牌面干燥，适合诈唬")
+            print(f"      🏜️ Board dry, good for bluffing")
 
 
 class PokerGame:
@@ -325,21 +325,21 @@ class PokerGame:
         sb_player = self.players[sb_pos]
         bb_player = self.players[bb_pos]
         
-        # 收取小盲注
+        # Collect small blind
         sb_amount = min(self.small_blind, sb_player.chips)
         sb_player.chips -= sb_amount
         sb_player.bet_this_round = sb_amount
         if sb_player.chips == 0:
             sb_player.all_in = True
         
-        # 收取大盲注
+        # Collect big blind
         bb_amount = min(self.big_blind, bb_player.chips)
         bb_player.chips -= bb_amount
         bb_player.bet_this_round = bb_amount
         if bb_player.chips == 0:
             bb_player.all_in = True
         
-        # 更新底池和当前下注
+        # Update pot and current bet
         self.pot = sb_amount + bb_amount
         self.current_bet = bb_amount
     
@@ -361,7 +361,7 @@ class PokerGame:
         return True
     
     def reset_for_new_stage(self):
-        # 重置下注状态，不收集底池（已在betting_round结束时收集）
+        # Reset betting state, don't collect pot (already collected at end of betting_round)
         self.current_bet = 0
         self.is_new_stage = True
 
@@ -421,7 +421,7 @@ class PokerGame:
             player.bet_this_round += actual_call
             player.total_bet += actual_call  # Update total bet
             
-            # 立即更新底池
+            # Update pot immediately
             self.pot += actual_call
             
             if player.chips == 0:
@@ -435,26 +435,26 @@ class PokerGame:
         elif action == 2:  # Raise
             min_raise = max(self.big_blind, self.current_bet - player.bet_this_round)
             
-            # 验证加注金额
-            if raise_amount < min_raise:
-                print(f"❌ 错误: 加注金额 ${raise_amount} 小于最小加注 ${min_raise}")
-                return
-            
-            # 确保加注金额至少是最小加注
-            raise_amount = max(raise_amount, min_raise)
-            total_needed = call_amount + raise_amount
-            
-            if total_needed > player.chips:
-                total_needed = player.chips
-                raise_amount = total_needed - call_amount
-            
-            player.chips -= total_needed
-            player.bet_this_round += total_needed
-            player.total_bet += total_needed  # Update total bet
-            
-            # 立即更新底池
-            self.pot += total_needed
-            self.current_bet = player.bet_this_round
+                    # Validate raise amount
+        if raise_amount < min_raise:
+            print(f"❌ Error: Raise amount ${raise_amount} is less than minimum raise ${min_raise}")
+            return
+        
+        # Ensure raise amount is at least minimum raise
+        raise_amount = max(raise_amount, min_raise)
+        total_needed = call_amount + raise_amount
+        
+        if total_needed > player.chips:
+            total_needed = player.chips
+            raise_amount = total_needed - call_amount
+        
+        player.chips -= total_needed
+        player.bet_this_round += total_needed
+        player.total_bet += total_needed  # Update total bet
+        
+        # Update pot immediately
+        self.pot += total_needed
+        self.current_bet = player.bet_this_round
             
             if player.chips == 0:
                 player.all_in = True
@@ -465,7 +465,7 @@ class PokerGame:
                 print(f"{player.name} raises ${raise_amount}. New bet: ${self.current_bet}")
     
     def collect_bets(self):
-        # 底池已经在玩家下注时实时更新，这里只需要重置下注状态
+        # Pot already updated in real-time when players bet, just reset betting state here
         for player in self.players:
             player.bet_this_round = 0
     
@@ -474,11 +474,11 @@ class PokerGame:
         print(f"Pot: {self.pot} | Current bet: {self.current_bet}")
         print(f"Community cards: {' '.join(self.community_cards) if self.community_cards else 'None'}")
         print()
-        # 只打印未弃牌的玩家
+        # Only print non-folded players
         active_players_count = 0
         for i, player in enumerate(self.players):
             if player.folded:
-                continue  # 跳过已弃牌的玩家
+                continue  # Skip folded players
             
             status = ""
             if player.all_in:
@@ -565,7 +565,7 @@ class PokerGame:
                 self.print_game_state()
                 print(f"\n{player.name}'s turn (Cards: {' '.join(player.hand)})")
                 
-                # 打印决策特征
+                # Print decision features
                 # game_state = {
                 #     'community_cards': self.community_cards,
                 #     'dealer_pos': self.dealer_pos,
@@ -582,7 +582,7 @@ class PokerGame:
                 
                 valid_actions = self.get_valid_actions(player)
                 
-                # 根据可用操作动态显示操作选项
+                # Dynamically display action options based on available actions
                 action_descriptions = []
                 for action in valid_actions:
                     if action == 0:
@@ -631,12 +631,12 @@ class PokerGame:
             
             first_to_act = False
         
-        # 在每个下注轮次结束时收集底池
+        # Collect pot at the end of each betting round
         if self.round_name == "Pre-Flop":
-            # Preflop阶段结束时收集底池
+            # Collect pot at end of Preflop stage
             self.collect_bets()
         else:
-            # 其他阶段结束时收集底池
+            # Collect pot at end of other stages
             self.collect_bets()
 
 def main():
