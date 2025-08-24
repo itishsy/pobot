@@ -1,6 +1,6 @@
 import random
-from ..base.gg_config import BB
-from ..base.models.game_feature import GameFeature
+from config.gg import BB
+from models.game_feature import GameFeature
 
 
 def fetch_by_level(cd, le):

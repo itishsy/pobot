@@ -420,7 +420,9 @@ class PokerGame:
             player.chips -= actual_call
             player.bet_this_round += actual_call
             player.total_bet += actual_call  # Update total bet
-            # 不直接加到self.pot，等collect_bets时统一处理
+            
+            # 立即更新底池
+            self.pot += actual_call
             
             if player.chips == 0:
                 player.all_in = True
@@ -449,7 +451,9 @@ class PokerGame:
             player.chips -= total_needed
             player.bet_this_round += total_needed
             player.total_bet += total_needed  # Update total bet
-            # 不直接加到self.pot，等collect_bets时统一处理
+            
+            # 立即更新底池
+            self.pot += total_needed
             self.current_bet = player.bet_this_round
             
             if player.chips == 0:
@@ -461,19 +465,9 @@ class PokerGame:
                 print(f"{player.name} raises ${raise_amount}. New bet: ${self.current_bet}")
     
     def collect_bets(self):
-        # Move all player bets to the main pot
-        total_bets = 0
+        # 底池已经在玩家下注时实时更新，这里只需要重置下注状态
         for player in self.players:
-            total_bets += player.bet_this_round
             player.bet_this_round = 0
-        
-        # 更新底池
-        self.pot += total_bets
-        
-
-        
-
-    
     
     def print_game_state(self):
         print(f"\n--- {self.round_name} ---")
@@ -503,7 +497,6 @@ class PokerGame:
             action_log = f' [{player.action}]' if hasattr(player, 'action') else ''
             print(f"{i}: {player.name} {position_str} - {player.chips}{status}{action_log}")
             active_players_count += 1
-        
     
     def play_round(self):
         # Pre-Flop
@@ -573,19 +566,19 @@ class PokerGame:
                 print(f"\n{player.name}'s turn (Cards: {' '.join(player.hand)})")
                 
                 # 打印决策特征
-                game_state = {
-                    'community_cards': self.community_cards,
-                    'dealer_pos': self.dealer_pos,
-                    'total_players': len(self.players),
-                    'player_index': player_idx,
-                    'pot': self.pot,
-                    'current_bet': self.current_bet,
-                    'round_name': self.round_name,
-                    'active_players_count': len(self.get_active_players()),
-                    'big_blind': self.big_blind # Added for standard features
-                }
-                features = player.get_standard_features(game_state)
-                player.print_standard_features(features)
+                # game_state = {
+                #     'community_cards': self.community_cards,
+                #     'dealer_pos': self.dealer_pos,
+                #     'total_players': len(self.players),
+                #     'player_index': player_idx,
+                #     'pot': self.pot,
+                #     'current_bet': self.current_bet,
+                #     'round_name': self.round_name,
+                #     'active_players_count': len(self.get_active_players()),
+                #     'big_blind': self.big_blind # Added for standard features
+                # }
+                # features = player.get_standard_features(game_state)
+                # player.print_standard_features(features)
                 
                 valid_actions = self.get_valid_actions(player)
                 
