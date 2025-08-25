@@ -435,26 +435,26 @@ class PokerGame:
         elif action == 2:  # Raise
             min_raise = max(self.big_blind, self.current_bet - player.bet_this_round)
             
-                    # Validate raise amount
-        if raise_amount < min_raise:
-            print(f"❌ Error: Raise amount ${raise_amount} is less than minimum raise ${min_raise}")
-            return
-        
-        # Ensure raise amount is at least minimum raise
-        raise_amount = max(raise_amount, min_raise)
-        total_needed = call_amount + raise_amount
-        
-        if total_needed > player.chips:
-            total_needed = player.chips
-            raise_amount = total_needed - call_amount
-        
-        player.chips -= total_needed
-        player.bet_this_round += total_needed
-        player.total_bet += total_needed  # Update total bet
-        
-        # Update pot immediately
-        self.pot += total_needed
-        self.current_bet = player.bet_this_round
+            # Validate raise amount
+            if raise_amount < min_raise:
+                print(f"❌ Error: Raise amount ${raise_amount} is less than minimum raise ${min_raise}")
+                return
+            
+            # Ensure raise amount is at least minimum raise
+            raise_amount = max(raise_amount, min_raise)
+            total_needed = call_amount + raise_amount
+            
+            if total_needed > player.chips:
+                total_needed = player.chips
+                raise_amount = total_needed - call_amount
+            
+            player.chips -= total_needed
+            player.bet_this_round += total_needed
+            player.total_bet += total_needed  # Update total bet
+            
+            # Update pot immediately
+            self.pot += total_needed
+            self.current_bet = player.bet_this_round
             
             if player.chips == 0:
                 player.all_in = True

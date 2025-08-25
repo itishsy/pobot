@@ -1,7 +1,7 @@
 import json
 
 
-class Player:
+class GamePlayer:
 
     def __init__(self, name, position, stack, action, active, amount=None):
         self.name = name
@@ -23,7 +23,7 @@ class Player:
     def new_from_dict_str(dict_str):
         if dict_str != '':
             dic = json.loads(dict_str)
-            return Player(name=dic['name'],
+            return GamePlayer(name=dic['name'],
                           position=dic['position'],
                           stack=dic['stack'],
                           active=dic['active'],
