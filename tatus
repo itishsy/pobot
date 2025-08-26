@@ -1,0 +1,101 @@
+[1mdiff --git a/src/analyst/strategy.py b/src/analyst/strategy.py[m
+[1mindex b8903d7..59038c3 100644[m
+[1m--- a/src/analyst/strategy.py[m
+[1m+++ b/src/analyst/strategy.py[m
+[36m@@ -1,6 +1,6 @@[m
+ import random[m
+[31m-from ..base.gg_config import BB[m
+[31m-from ..base.models.game_feature import GameFeature[m
+[32m+[m[32mfrom config.gg import BB[m
+[32m+[m[32mfrom models.game_feature import GameFeature[m
+ [m
+ [m
+ def fetch_by_level(cd, le):[m
+[1mdiff --git a/src/train/cli.py b/src/train/cli.py[m
+[1mindex 97c60fd..f166802 100644[m
+[1m--- a/src/train/cli.py[m
+[1m+++ b/src/train/cli.py[m
+[36m@@ -420,7 +420,9 @@[m [mclass PokerGame:[m
+             player.chips -= actual_call[m
+             player.bet_this_round += actual_call[m
+             player.total_bet += actual_call  # Update total bet[m
+[31m-            # 不直接加到self.pot，等collect_bets时统一处理[m
+[32m+[m[41m            [m
+[32m+[m[32m            # 立即更新底池[m
+[32m+[m[32m            self.pot += actual_call[m
+             [m
+             if player.chips == 0:[m
+                 player.all_in = True[m
+[36m@@ -449,7 +451,9 @@[m [mclass PokerGame:[m
+             player.chips -= total_needed[m
+             player.bet_this_round += total_needed[m
+             player.total_bet += total_needed  # Update total bet[m
+[31m-            # 不直接加到self.pot，等collect_bets时统一处理[m
+[32m+[m[41m            [m
+[32m+[m[32m            # 立即更新底池[m
+[32m+[m[32m            self.pot += total_needed[m
+             self.current_bet = player.bet_this_round[m
+             [m
+             if player.chips == 0:[m
+[36m@@ -461,19 +465,9 @@[m [mclass PokerGame:[m
+                 print(f"{player.name} raises ${raise_amount}. New bet: ${self.current_bet}")[m
+     [m
+     def collect_bets(self):[m
+[31m-        # Move all player bets to the main pot[m
+[31m-        total_bets = 0[m
+[32m+[m[32m        # 底池已经在玩家下注时实时更新，这里只需要重置下注状态[m
+         for player in self.players:[m
+[31m-            total_bets += player.bet_this_round[m
+             player.bet_this_round = 0[m
+[31m-        [m
+[31m-        # 更新底池[m
+[31m-        self.pot += total_bets[m
+[31m-        [m
+[31m-[m
+[31m-        [m
+[31m-[m
+[31m-    [m
+     [m
+     def print_game_state(self):[m
+         print(f"\n--- {self.round_name} ---")[m
+[36m@@ -503,7 +497,6 @@[m [mclass PokerGame:[m
+             action_log = f' [{player.action}]' if hasattr(player, 'action') else ''[m
+             print(f"{i}: {player.name} {position_str} - {player.chips}{status}{action_log}")[m
+             active_players_count += 1[m
+[31m-        [m
+     [m
+     def play_round(self):[m
+         # Pre-Flop[m
+[36m@@ -573,19 +566,19 @@[m [mclass PokerGame:[m
+                 print(f"\n{player.name}'s turn (Cards: {' '.join(player.hand)})")[m
+                 [m
+                 # 打印决策特征[m
+[31m-                game_state = {[m
+[31m-                    'community_cards': self.community_cards,[m
+[31m-                    'dealer_pos': self.dealer_pos,[m
+[31m-                    'total_players': len(self.players),[m
+[31m-                    'player_index': player_idx,[m
+[31m-                    'pot': self.pot,[m
+[31m-                    'current_bet': self.current_bet,[m
+[31m-                    'round_name': self.round_name,[m
+[31m-                    'active_players_count': len(self.get_active_players()),[m
+[31m-                    'big_blind': self.big_blind # Added for standard features[m
+[31m-                }[m
+[31m-                features = player.get_standard_features(game_state)[m
+[31m-                player.print_standard_features(features)[m
+[32m+[m[32m                # game_state = {[m
+[32m+[m[32m                #     'community_cards': self.community_cards,[m
+[32m+[m[32m                #     'dealer_pos': self.dealer_pos,[m
+[32m+[m[32m                #     'total_players': len(self.players),[m
+[32m+[m[32m                #     'player_index': player_idx,[m
+[32m+[m[32m                #     'pot': self.pot,[m
+[32m+[m[32m                #     'current_bet': self.current_bet,[m
+[32m+[m[32m                #     'round_name': self.round_name,[m
+[32m+[m[32m                #     'active_players_count': len(self.get_active_players()),[m
+[32m+[m[32m                #     'big_blind': self.big_blind # Added for standard features[m
+[32m+[m[32m                # }[m
+[32m+[m[32m                # features = player.get_standard_features(game_state)[m
+[32m+[m[32m                # player.print_standard_features(features)[m
+                 [m
+                 valid_actions = self.get_valid_actions(player)[m
+                 [m
