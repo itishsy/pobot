@@ -1,6 +1,6 @@
 from models.game_state import GameState
 
-class GameFeature():
+class Features():
 
     def __init__(self, game_state: GameState) -> None:
         self.equity = 0
@@ -22,4 +22,3 @@ class GameFeature():
         self.wetness = game_state.wetness
         self.equity = game_state.equity
 
-        
