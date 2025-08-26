@@ -1,11 +1,9 @@
 import random
 from collections import defaultdict
-try:
-    from .cal import distribute_pot
-except ImportError:
-    from cal import distribute_pot
 
-from models.player import Player
+
+from game.cal import distribute_pot
+from game.player import Player
 
 
 class PokerGame:
