@@ -1,0 +1,35 @@
+---
+Description: 德州扑克AI项目核心开发规范
+AlwaysApply: true
+---
+
+# 德州扑克AI开发核心规范
+
+## 项目结构
+- 项目根目录: `poker_ai/`
+- 扑克核心逻辑: `poker_ai/core/`
+- AI算法实现: `poker_ai/ai/`
+- 游戏模拟器: `poker_ai/simulator/`
+- 训练代码: `poker_ai/training/`
+- 工具函数: `poker_ai/utils/`
+- 测试文件: `tests/` 与源代码结构镜像
+
+## 通用开发规范
+- 使用 Python 3.9+ 特性
+- 遵循 PEP 8 编码规范
+- 所有公共API必须有类型注解
+- 使用 Google 风格的 docstring
+- 使用 logging 模块而非 print 进行调试输出
+- 使用绝对导入而非相对导入
+
+## 性能要求
+- 算法核心部分必须考虑时间复杂度和空间复杂度
+- 扑克决策函数应在100ms内完成
+- 使用适当的数据结构优化查询性能
+- 对计算密集型操作使用缓存（@lru_cache）
+
+## 测试要求
+- 核心功能测试覆盖率不低于90%
+- 使用 pytest 作为测试框架
+- 为每个主要功能编写单元测试
+- 模拟不同游戏场景进行集成测试
