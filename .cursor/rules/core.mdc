@@ -6,12 +6,12 @@ AlwaysApply: true
 # 德州扑克AI开发核心规范
 
 ## 项目结构
-- 项目根目录: `poker_ai/`
-- 扑克核心逻辑: `poker_ai/core/`
-- AI算法实现: `poker_ai/ai/`
-- 游戏模拟器: `poker_ai/simulator/`
-- 训练代码: `poker_ai/training/`
-- 工具函数: `poker_ai/utils/`
+- 项目根目录: `pobot/`
+- 扑克核心逻辑: `pobot/core/`
+- AI算法实现: `pobot/ai/`
+- 游戏模拟器: `pobot/simulator/`
+- 训练代码: `pobot/training/`
+- 工具函数: `pobot/utils/`
 - 测试文件: `tests/` 与源代码结构镜像
 
 ## 通用开发规范
