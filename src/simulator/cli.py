@@ -2,9 +2,8 @@ import random
 from collections import defaultdict
 
 
-from game.cal import distribute_pot
-from game.player import Player
-
+from simulator.cal import distribute_pot
+from core.game_state import GameState, Round, Player, Action, ActionType
 
 class PokerGame:
     def __init__(self, player_names, small_blind=1, big_blind=2):
@@ -20,6 +19,7 @@ class PokerGame:
         self.round_name = "Pre-Flop"  # Pre-Flop, Flop, Turn, River
         self.stage_complete = False
         self.is_new_stage = True
+        self.game_states = {}
 
     
     def _create_deck(self):
@@ -215,6 +215,19 @@ class PokerGame:
             active_players_count += 1
     
     def play_round(self):
+
+        for player in self.players:
+            game_state = GameState()
+            game_state.table_id = "simulator_table"
+            game_state.big_blind = self.big_blind
+            game_state.total_players = len(self.players)
+            game_state.current_player = player
+            game_state.opponents = [player for player in self.players if player != game_state.current_player]
+            game_state.rounds = []
+            game_state.reward = 0
+            game_state.rounds.append(Round(stage=0, current_bet_round=0, community_cards=[], pot=0, call=0, min_raise=0, max_raise=0, opponents=[player for player in self.players if player != game_state.current_player]))
+            self.game_states[player.name] = game_state
+
         # Pre-Flop
         self.deal_hole_cards()
         self.post_blinds()
@@ -337,6 +350,9 @@ class PokerGame:
                         print("Invalid input. Please enter a number.")
                 
                 self.process_player_action(player, action, raise_amt)
+                round = Round(stage=0, current_bet_round=0, community_cards=[], pot=0, call=0, min_raise=0, max_raise=0, opponents=[player for player in self.players if player != game_state.current_player])
+                round.action = Action(action_type=ActionType.RAISE, amount=raise_amt)
+                self.game_states[player.name].rounds.append(round)
                 
                 if action == 2:  # Raise
                     last_raiser = player_idx

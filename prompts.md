@@ -17,15 +17,16 @@
 ## 3. 决策流程 (AI::decide(action, game_state))
 智能体的决策函数应遵循以下逻辑流程：
 
-1.  **解析状态**：从 `game_state` 中提取所有相关信息。
-2.  **更新对手模型**：根据当前回合的行动，更新相关玩家的统计数据。
-3.  **计算基础胜率 (Equity)**：计算我方手牌对抗对手预估范围的胜率。
-4.  **构建决策树**：枚举所有合法动作（fold, call, raise, all-in）及其预期的EV。
-5.  **EV 计算**：
+1.  **读取状态**：通过OCR读取线上牌桌或模拟器生成牌桌的状态 `game_state`，
+2.  **解析状态**：从 `game_state` 中提取所有相关信息，生成特征变量 `game_feature`
+3.  **更新对手模型**：根据当前回合的行动，更新相关玩家的统计数据。
+4.  **计算基础胜率 (Equity)**：计算我方手牌对抗对手预估范围的胜率。
+5.  **构建决策树**：枚举所有合法动作（fold, call, raise, all-in）及其预期的EV。
+6.  **EV 计算**：
     - **Fold EV**：已知（即当前已投入的筹码损失）。
     - **Call EV**： = (Pot + Bet to Call) * Equity - Bet to Call
     - **Raise EV**：更复杂，需模拟对手可能的反应（Fold/Call/Raise），并加权平均其EV。严重依赖对手模型。
-6.  **决策**：选择具有最高期望EV的动作。所有EV计算必须考虑当前底池赔率、隐含赔率和反向隐含赔率。
+7.  **决策**：选择具有最高期望EV的动作。所有EV计算必须考虑当前底池赔率、隐含赔率和反向隐含赔率。
 
 ## 4. 代码风格与规范
 - 使用清晰的类型提示（Type Hints）。
@@ -35,14 +36,6 @@
 
 ## 5. 关键数据结构示例（Python）
 ```python
-from typing import List, Dict, Optional
-
-class PlayerModel:
-    def __init__(self):
-        self.vpip: float = 0.0 # Voluntarily Put $ in Pot %
-        self.pfr: float = 0.0  # Pre-Flop Raise %
-        self.af: float = 0.0   # Aggression Frequency
-        # ... other stats
 
 class GameState:
     def __init__(self):
