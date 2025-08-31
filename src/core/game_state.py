@@ -32,7 +32,11 @@ class Player:
     is_dealer: bool  # 玩家是否为庄家
     is_small_blind: bool  # 玩家是否为小盲
     is_big_blind: bool  # 玩家是否为大盲
+    bet_this_round：int
+    total_bet：int  # Total bet in this hand
     cards: Optional[List[str]] = None  # 玩家的手牌(仅对自己的牌可见)
+    action：int
+    position：int
     last_action: Optional[Tuple[ActionType, int]] = None  # 玩家上一轮动作
     vpip: float = 0.0  # 玩家自愿入池率统计
     pfr: float = 0.0  # 玩家翻前加注率统计
@@ -47,6 +51,22 @@ class Action:
     amount: int  # 下注/加注金额(对于call/fold/check为0)
     street: Street  # 动作发生的阶段
     timestamp: datetime  # 动作发生时间
+    
+class Game:
+	"""游戏类 - 当前玩家的一手牌游戏"""
+	
+	def __init__(self):
+		self.code: str = ""  # 唯一码
+		self.player: str = ""  # 当前玩家
+		self.hand: List[str] = []
+		self.position: int = 0
+		self.stack: int = 0
+		self.reward: int = 0
+		self.states: List[GameState] = []
+		
+		
+
+
 
 class GameState:
     """游戏状态类 - 包含当前牌桌所有可识别信息"""
