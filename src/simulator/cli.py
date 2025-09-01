@@ -294,21 +294,6 @@ class PokerGame:
                 self.print_game_state()
                 print(f"\n{player.name}'s turn (Cards: {' '.join(player.hand)})")
                 
-                # Print decision features
-                # game_state = {
-                #     'community_cards': self.community_cards,
-                #     'dealer_pos': self.dealer_pos,
-                #     'total_players': len(self.players),
-                #     'player_index': player_idx,
-                #     'pot': self.pot,
-                #     'current_bet': self.current_bet,
-                #     'round_name': self.round_name,
-                #     'active_players_count': len(self.get_active_players()),
-                #     'big_blind': self.big_blind # Added for standard features
-                # }
-                # features = player.get_standard_features(game_state)
-                # player.print_standard_features(features)
-                
                 valid_actions = self.get_valid_actions(player)
                 
                 # Dynamically display action options based on available actions
