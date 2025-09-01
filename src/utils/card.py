@@ -1,5 +1,8 @@
 from collections import Counter
 from itertools import combinations
+from treys import Evaluator, Card, Deck
+import numpy as np
+
 
 # 牌型强度常量
 HIGH_CARD = 0
@@ -116,25 +119,25 @@ def get_best_hand(hole_cards, community_cards):
 
 def compare_hands(hand1, hand2, community_cards):
     # 获取每个玩家的最佳手牌分数和详细信息
-    player1_score, player1_details = get_best_hand(hand1, community_cards)
-    player2_score, player2_details = get_best_hand(hand2, community_cards)
+    score1, details1 = get_best_hand(hand1, community_cards)
+    score2, details2 = get_best_hand(hand2, community_cards)
 
     # 比较牌型大小
-    if player1_score > player2_score:
+    if score1 > score2:
         return 1
-    elif player1_score < player2_score:
+    elif score1 < score2:
         return -1
     else:
         # 牌型相同，比较详细信息
-        if player1_details > player2_details:
+        if details1 > details2:
             return 1
-        elif player1_details < player2_details:
+        elif details1 < details2:
             return -1
         else:
             # 完全相同的牌型，比较剩余的牌（kickers）
             # 获取所有牌的组合
-            player1_all_cards = player1.hand + community_cards
-            player2_all_cards = player2.hand + community_cards
+            player1_all_cards = hand1 + community_cards
+            player2_all_cards = hand2 + community_cards
 
             # 评估所有可能的5张牌组合
             player1_best = (0, [])
@@ -159,3 +162,43 @@ def compare_hands(hand1, hand2, community_cards):
             else:
                 return 0
 
+
+def eval_strength(hand, board=None, opp_ranges=None, trials=5000):
+    evaluator = Evaluator()
+    community_cards = [] if board is None else [Card.new(v) if isinstance(v, str) else v for v in board]
+    hand = [Card.new(v) if isinstance(v, str) else v for v in hand]
+    used_cards = hand + community_cards
+    opp_ranges = [[Card.new(v[0:2]), Card.new(v[2:4])] for v in opp_ranges] if opp_ranges is not None else []
+    opp_hands = []
+    for r in opp_ranges:
+        if r[0] not in used_cards and r[1] not in used_cards:
+            opp_hands.append(r)
+    deck = Deck()
+
+    wins = 0
+    for _ in range(trials):
+        # try:
+        deck.shuffle()
+
+        for card in used_cards:
+            deck.cards.remove(card)
+
+        # 底牌范围中随机抽取一手牌
+        if len(opp_hands) > 0:
+            opp_hand = opp_hands[np.random.randint(0, len(opp_hands))]
+            deck.cards.remove(opp_hand[0])
+            deck.cards.remove(opp_hand[1])
+        else:
+            opp_hand = deck.draw(2)
+
+        board = community_cards + deck.draw(5 - len(community_cards))
+
+        # 计算牌力
+        strength1 = evaluator.evaluate(hand, board)
+        strength2 = evaluator.evaluate(opp_hand, board)
+        if strength1 < strength2:
+            wins += 1
+        # except:
+        #     print('error', hand)
+        # wins += random.randint(0, 1)
+    return round(wins / trials, 4)

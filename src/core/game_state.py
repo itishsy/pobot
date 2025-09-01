@@ -12,84 +12,84 @@ action value: 0-fold,1-check/call,2-bet/raise/allin
 
 @dataclass
 class Player:
-    """玩家信息类"""
-    id: str  # 玩家唯一标识
-    name: str  # 玩家昵称
-    position: int # 玩家位置
-    hand: List[str] # 玩家手牌
-    stack: int  # 玩家剩余筹码量
-    is_in_hand: bool  # 玩家是否仍在牌局中
-    is_active: bool  # 玩家是否可行动(未弃牌且未全下)
-    is_dealer: bool  # 玩家是否为庄家
-    is_small_blind: bool  # 玩家是否为小盲
-    is_big_blind: bool  # 玩家是否为大盲
-    bet_this_round: int # 玩家在当前回合下注额
-    bet_this_stage：int # 玩家在当前阶段下注额
+    """Player information class"""
+    id: str  # Player unique identifier
+    name: str  # Player nickname
+    position: int # Player position
+    hand: List[str] # Player hole cards
+    stack: int  # Player remaining chips
+    is_in_hand: bool  # Whether player is still in the hand
+    is_active: bool  # Whether player can act (not folded and not all-in)
+    is_dealer: bool  # Whether player is the dealer
+    is_small_blind: bool  # Whether player is small blind
+    is_big_blind: bool  # Whether player is big blind
+    bet_this_round: int # Player bet amount in current round
+    bet_this_stage: int # Player bet amount in current stage
     bet_this_hand: int  # Total bet in this hand
-    action: str # 玩家采取的动作
-    vpip: float = 0.0  # 玩家自愿入池率统计
-    pfr: float = 0.0  # 玩家翻前加注率统计
-    aggression_factor: float = 0.0  # 玩家攻击性统计
-    three_bet_percent: float = 0.0  # 玩家3Bet频率统计
+    action: str # Player's action
+    vpip: float = 0.0  # Player voluntary put money in pot rate statistics
+    pfr: float = 0.0  # Player pre-flop raise rate statistics
+    aggression_factor: float = 0.0  # Player aggression statistics
+    three_bet_percent: float = 0.0  # Player 3Bet frequency statistics
 
 @dataclass
 class Round:
-    """游戏轮次类 - 记录玩家的每一个行动轮次前的牌面"""
-    id: int # 时间戳
-    stage: int  # 阶段: 0: preflop, 1: flop, 2: turn, 3: river
-    current_bet_round: int = 0  # 当前下注轮次(同一阶段内可能有多轮下注)
-    community_cards: List[str] = []  # 公共牌
-    pot: int = 0  # 当前底池大小
-    call: int = 0  # 当前需要跟注的金额
-    min_raise: int = 0  # 最小加注额度
-    max_raise: int = 0  # 最大加注额度(通常为玩家剩余筹码)
+    """Game round class - records the board state before each player action round"""
+    id: int # Timestamp
+    stage: int  # Stage: 0: preflop, 1: flop, 2: turn, 3: river
+    current_bet_round: int = 0  # Current betting round (multiple betting rounds possible within same stage)
+    community_cards: List[str] = []  # Community cards
+    pot: int = 0  # Current pot size
+    call: int = 0  # Current call amount needed
+    min_raise: int = 0  # Minimum raise amount
+    max_raise: int = 0  # Maximum raise amount (usually player's remaining chips)
 
-    current_player: Player # 当前玩家
-    active_opponents: List[Player] = []  # 当前活跃玩家信息
+    current_player: Player # Current player
+    active_opponents: List[Player] = []  # Current active players information
 
 
 @dataclass
 class GameState:
-    """游戏状态类 - 记录一手牌局过程的状态信息"""
+    """Game state class - records state information throughout a hand"""
     
-    table_id: str = "" # 牌桌ID
-    big_blind: int = 0 # 大盲金额
-    total_players: int = 6 # 入座玩家数量，2-6人
-    player: Player = None # 当前玩家
-    opponents: List[Player] = [] # 其他玩家信息
-    rounds: List[Round] = [] # 当局游戏所有状态，包含每个阶段的所有信息
-    reward: int = 0 # 当前玩家获得的奖励
+    table_id: str = "" # Table ID
+    big_blind: int = 0 # Big blind amount
+    total_players: int = 6 # Number of seated players, 2-6 players
+    player: Player = None # Current player
+    opponents: List[Player] = [] # Other players information
+    rounds: List[Round] = [] # All game states for current hand, including all information for each stage
+    reward: int = 0 # Current player's reward
 
-    def get_action_history(self) -> List[Action]:
-        """获取本手牌所有行动记录"""
+    def get_action_history(self) -> List[str]:
+        """Get all action records for this hand"""
         action_history = []
         for round in self.rounds:
             action_history.extend(round.action_history)
         return action_history
     
-    def get_current_street_actions(self) -> List[Action]:
-        """获取当前阶段的行动记录"""
+    def get_current_street_actions(self) -> List[str]:
+        """Get action records for current street"""
         current_street_actions = []
         for round in self.rounds:
             current_street_actions.extend(round.current_street_actions)
         return current_street_actions
     
     def get_preflop_raiser(self) -> Optional[str]:
-        """获取翻前最后加注者"""
+        """Get the last preflop raiser"""
         for round in self.rounds:
             if round.stage == 0:
                 return round.preflop_raiser
         return None
     
     def get_aggressor(self) -> Optional[str]:
-        """获取当前回合最后一个激进者(下注/加注者)"""
+        """Get the last aggressor in current round (bettor/raiser)"""
         for round in self.rounds:
             if round.stage == 0:
                 return round.aggressor
         return None
     
     def get_last_raiser(self) -> Optional[str]:
-        """获取最后一个加注者"""
+        """Get the last raiser"""
         for round in self.rounds:
             if round.stage == 0:
                 return round.last_raiser

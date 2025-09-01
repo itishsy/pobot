@@ -2,8 +2,8 @@ import random
 from collections import defaultdict
 
 
-from simulator.cal import distribute_pot
 from core.game_state import GameState, Round, Player, Action, ActionType
+from utils.card import compare_hands
 
 class PokerGame:
     def __init__(self, player_names, small_blind=1, big_blind=2):
@@ -16,7 +16,7 @@ class PokerGame:
         self.community_cards = []
         self.deck = self._create_deck()
         self.current_bet = 0
-        self.round_name = "Pre-Flop"  # Pre-Flop, Flop, Turn, River
+        self.stage = 0  # 0: Pre-Flop, 1: Flop, 2: Turn, 3: River
         self.stage_complete = False
         self.is_new_stage = True
         self.game_states = {}
@@ -94,11 +94,11 @@ class PokerGame:
         self.community_cards.extend(new_cards)
         
         if len(self.community_cards) == 3:
-            self.round_name = "Flop"
+            self.stage = 1
         elif len(self.community_cards) == 4:
-            self.round_name = "Turn"
+            self.stage = 2
         elif len(self.community_cards) == 5:
-            self.round_name = "River"
+            self.stage = 3
         
         return True
     
@@ -184,6 +184,136 @@ class PokerGame:
         # Pot already updated in real-time when players bet, just reset betting state here
         for player in self.players:
             player.bet_this_round = 0
+
+    def distribute_pot(self, active_players, community_cards, pot):
+        # 1. Handle case with only one active player
+        if len(active_players) == 1:
+            active_players[0].chips += pot
+            return {'winner': active_players[0], 'split_pot': False, 'message': f"{active_players[0].name} wins! Receives {pot} chips"}
+
+        # 2. Filter out all-in players and their all-in amounts
+        all_in_players = [p for p in active_players if p.all_in]
+        if not all_in_players:
+            # No all-in players, distribute pot normally
+            return self.distribute_regular_pot(active_players, community_cards, pot)
+
+        # 3. Calculate each player's total investment in this round (including previous bets)
+        for player in active_players:
+            # Assume player object has a bet_this_round attribute to track bets this round
+            # If not, we can initialize it to 0 here
+            if not hasattr(player, 'total_bet'):
+                player.total_bet = player.bet_this_round
+
+        # 4. Sort all players by total investment from lowest to highest
+        sorted_players = sorted(active_players, key=lambda p: p.total_bet)
+
+        # 5. Create side pots
+        side_pots = []
+        current_pot = pot
+        previous_bet = 0
+
+        # Get all distinct bet amounts and sort them
+        unique_bets = sorted(list(set(p.total_bet for p in active_players)))
+
+        for bet in unique_bets[1:]:  # Skip the smallest bet
+            # Calculate the size of this side pot
+            eligible_players = [p for p in active_players if p.total_bet >= bet]
+            side_pot_size = (bet - previous_bet) * len(eligible_players)
+            current_pot -= side_pot_size
+            side_pots.append((side_pot_size, eligible_players))
+            previous_bet = bet
+
+        # Add the remaining main pot
+        if current_pot > 0:
+            side_pots.append((current_pot, active_players))
+
+        # 6. Distribute each side pot
+        messages = []
+        results = []
+
+        for pot_size, eligible_players in side_pots:
+            # Find the winner for this side pot
+            best_player = eligible_players[0]
+            tied_players = [best_player]
+
+            for player in eligible_players[1:]:
+                result = card.compare_hands(best_player.hand, player.hand, community_cards)
+                if result < 0:
+                    best_player = player
+                    tied_players = [best_player]
+                elif result == 0:
+                    tied_players.append(player)
+
+            # Distribute this side pot
+            if len(tied_players) > 1:
+                # Split the side pot
+                split_amount = pot_size // len(tied_players)
+                remainder = pot_size % len(tied_players)
+
+                messages.append(f"Side pot of {pot_size} is split between {', '.join([p.name for p in tied_players])}")
+
+                for i, player in enumerate(tied_players):
+                    player.chips += split_amount
+                    if i < remainder:
+                        player.chips += 1
+                        messages.append(f"{player.name} receives {split_amount + 1} chips")
+                    else:
+                        messages.append(f"{player.name} receives {split_amount} chips")
+
+                results.append({
+                    'winner': None,
+                    'split_pot': True,
+                    'tied_players': tied_players,
+                    'pot_size': pot_size
+                })
+            else:
+                # Single winner
+                best_player.chips += pot_size
+                messages.append(f"{best_player.name} wins side pot of {pot_size}")
+                results.append({
+                    'winner': best_player,
+                    'split_pot': False,
+                    'pot_size': pot_size
+                })
+
+        return {
+            'results': results,
+            'message': '\n'.join(messages)
+        }
+
+    def distribute_regular_pot(self, active_players, community_cards, pot):
+        # Compare all players' hands
+        best_player = active_players[0]
+        tied_players = [best_player]
+
+        for player in active_players[1:]:
+            result = card.compare_hands(best_player.hand, player.hand, community_cards)
+            if result < 0:
+                best_player = player
+                tied_players = [best_player]
+            elif result == 0:
+                tied_players.append(player)
+
+        if len(tied_players) > 1:
+            # Split the pot
+            split_amount = pot // len(tied_players)
+            remainder = pot % len(tied_players)
+
+            message = f"Pot of {pot} is split between {', '.join([p.name for p in tied_players])}\n"
+
+            for i, player in enumerate(tied_players):
+                player.chips += split_amount
+                if i < remainder:
+                    player.chips += 1
+                    message += f"{player.name} receives {split_amount + 1} chips\n"
+                else:
+                    message += f"{player.name} receives {split_amount} chips\n"
+
+            return {'winner': None, 'split_pot': True, 'tied_players': tied_players, 'message': message}
+        else:
+            # Single winner
+            best_player.chips += pot
+            return {'winner': best_player, 'split_pot': False, 'message': f"{best_player.name} wins! Receives {pot} chips"}
     
     def print_game_state(self):
         print(f"\n--- {self.round_name} ---")
@@ -252,7 +382,7 @@ class PokerGame:
             self.betting_round()
         
         # Showdown
-        distribute_pot(self.get_active_players(), self.community_cards, self.pot)
+        self.distribute_pot(self.get_active_players(), self.community_cards, self.pot)
 
         # Prepare for next hand
         self.community_cards = []
@@ -268,10 +398,10 @@ class PokerGame:
         self.shuffle_deck()
         self.pot = 0
         self.current_bet = 0
-        self.round_name = "Pre-Flop"
+        self.stage = 0
     
     def betting_round(self):
-        if self.round_name == "Pre-Flop":
+        if self.stage == 0:
             start_pos = (self.dealer_pos + 3) % len(self.players)  # UTG position   
         else:
             start_pos = (self.dealer_pos + 1) % len(self.players)  # SB position
@@ -349,7 +479,7 @@ class PokerGame:
             first_to_act = False
         
         # Collect pot at the end of each betting round
-        if self.round_name == "Pre-Flop":
+        if self.stage == 0:
             # Collect pot at end of Preflop stage
             self.collect_bets()
         else:
